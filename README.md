@@ -1,6 +1,6 @@
-# Job List View Rundeck Plugin
+# Job ROI Summary View Rundeck Plugin
 
-This is a Rundeck UI plugin that shows a table list view of Rundeck jobs with statistics
+This is a Rundeck UI plugin that shows a table list view of Rundeck jobs with ROI data
 
 ## Build
 
@@ -16,5 +16,5 @@ You can install this plugin with the Rundeck Repository feature.
 For older versions of Rundeck
 
 ```
-cp build/libs/ui-job-list-${version}.zip $RDECK_BASE/libext
+cp build/libs/ui-roi-summary-${version}.zip $RDECK_BASE/libext
 ```

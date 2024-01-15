@@ -1,24 +1,24 @@
-name: ui-job-list
-display: Job List View
+name: ui-roi-summary
+display: Job List ROI Summary View
 rundeckPluginVersion: 2.0
-author: Greg Schueler
+author: Eric Chapman
 description: Table list view of Jobs with statistics
 rundeckCompatibilityVersion: 3.x
 targetHostCompatibility: unix
 license: Apache 2.0
-sourceLink: https://github.com/rundeck-plugins/ui-job-list
-docsLink: https://github.com/rundeck-plugins/ui-job-list
+sourceLink: https://github.com/echapmanFromBunnings/ui-roi-summary
+docsLink: https://github.com/echapmanFromBunnings/ui-roi-summary
 tags:
     - script
     - UI
-date: 2019-06-11T19:50:16.097Z
-version: 0.1.2
+date: 2024-01-15T19:50:16.097Z
+version: 0.0.1
 providers:
-    - name: ui-job-list
+    - name: ui-roi-summary
       service: UI
       plugin-type: ui
-      title: ui-job-list
-      description: Table list view of Jobs with statistics
+      title: ui-roi-summary
+      description: Table list view of Jobs with ROI data
       ui:
         - pages: '*'
           scripts:

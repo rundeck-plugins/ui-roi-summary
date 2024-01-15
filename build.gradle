@@ -26,12 +26,12 @@ plugins {
     id 'com.bertramlabs.asset-pipeline' version '2.11.6'
 }
 
-ext.pluginName = 'Job List View'
-ext.pluginDescription = 'Table list view of Jobs with statistics'
-ext.sopsCopyright = "© 2019, Rundeck, Inc."
-ext.sopsUrl = "http://rundeck.com"
+ext.pluginName = 'Job ROI Summary View'
+ext.pluginDescription = 'Table list view of Jobs with ROI data'
+ext.sopsCopyright = "© 2024, Eric Chapman."
+ext.sopsUrl = "http://echapman.dev"
 ext.buildDateString=new Date().format("yyyy-MM-dd'T'HH:mm:ssX")
-ext.archivesBaseName = "ui-job-list"
+ext.archivesBaseName = "ui-roi-summary"
 ext.pluginBaseFolder = "."
 
 
