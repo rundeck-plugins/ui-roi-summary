@@ -14,10 +14,10 @@ tags:
 date: 2024-01-15T19:50:16.097Z
 version: 0.0.1
 providers:
-    - name: ui-roi-summary
+    - name: ui-roisummary
       service: UI
       plugin-type: ui
-      title: ui-roi-summary
+      title: ui-roisummary
       description: Table list view of Jobs with ROI data
       ui:
         - pages: '*'

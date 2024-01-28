@@ -31,7 +31,7 @@ ext.pluginDescription = 'Table list view of Jobs with ROI data'
 ext.sopsCopyright = "© 2024, Eric Chapman."
 ext.sopsUrl = "http://echapman.dev"
 ext.buildDateString=new Date().format("yyyy-MM-dd'T'HH:mm:ssX")
-ext.archivesBaseName = "ui-roi-summary"
+ext.archivesBaseName = "ui-roisummary"
 ext.pluginBaseFolder = "."
 
 

@@ -1,7 +1,6 @@
 //= require lib/jquery.sparkline.min
 //= require lib/ko-sparkline
 //= require lib/support
-//= require lib/weather-forecast
 var jobListSupport = new JobListSupport()
 jQuery(function () {
     var project = rundeckPage.project();
@@ -505,7 +504,7 @@ jQuery(function () {
         self.queryMax = ko.observable(data.queryMax || 10);
     }
 
-    function JobListView() {
+    function JobRoiListView() {
         var self = this;
         self.jobfavorites = ko.observable();
         self.jobfavsOnly = ko.observable(false);
@@ -643,7 +642,7 @@ jQuery(function () {
 
         };
         self.loadComplete = function () {
-            window.joblistview = self;
+            window.joblistroiview = self;
 
             jQuery(document).trigger(
                 jQuery.Event('loaded.rundeck.plugin.joblist', {
@@ -651,7 +650,7 @@ jQuery(function () {
                 }));
         };
         self.setupKnockout = function () {
-            jobListSupport.setup_ko_loader('ui-joblist', pluginBase, pluginName);
+            jobListSupport.setup_ko_loader('ui-roisummary', pluginBase, pluginName);
 
             //custom bindings
             ko.bindingHandlers.bootstrapTooltipTrigger = {
@@ -683,10 +682,6 @@ jQuery(function () {
             let sparklineCard = jQuery(`
 <div >
 
-<ui-joblist-job-sparkline params="dash: dash, job: job"></ui-joblist-job-sparkline>
-
-<ui-joblist-sparkline-config-options params="dash: dash, job:job"></ui-joblist-sparkline-config-options>
-   
 </div>
 `);
             if(typeof(window._rundeckui)!=='undefined'){
@@ -700,7 +695,7 @@ jQuery(function () {
 
 
             let newColumn = jQuery(`
-<ui-joblist-job-stats-forecast-item params="job: job"></ui-joblist-job-stats-forecast-item>
+
 `);
             if(typeof(window._rundeckui)!=='undefined'){
                 window._rundeckui.scheduledExecution.show.addJobStatsItem({before:true, content:newColumn})
@@ -721,21 +716,6 @@ jQuery(function () {
 
                     jQuery(col1).before(newColumn);
                 }
-
-                    //
-                    //
-                    // //replace the static execcount text with a ko bound total
-                    // let execcount = jQuery(div).find('[data-execcount]')[0];
-                    // let val = div.find('[data-execcount]').data('execcount') ||
-                    //           div.find('[data-execcount]').text().trim();
-                    //
-                    // jQuery(execcount).html('<span data-bind="text: total">' + val + '</span>');
-                    //
-                    // ko.applyBindings(job, execcount);
-
-                    //TODO: replace static Success Rate and Average Duration columns as well
-
-
             }
 
             ko.applyBindings(myViewmodel, newColumn[0]);
@@ -747,10 +727,10 @@ jQuery(function () {
             let tablink = jobListSupport.initPage(
                 '#indexMain',
                 jobListSupport.i18Message(pluginName, 'Jobs'),
-                'joblistview',
+                'joblistroiview',
                 'joblisttab',
-                jobListSupport.i18Message(pluginName, 'Dashboard'),
-                '<ui-joblist-table params="joblist: $data"></ui-joblist-table>',
+                jobListSupport.i18Message(pluginName, 'ROI View'),
+                '<ui-roisummary-table params="joblist: $data"></ui-roisummary-table>',
                 function (elem) {
                     // console.log("tab: " + elem, elem);
                     ko.applyBindings(self, elem);
@@ -777,10 +757,10 @@ jQuery(function () {
 
     if (pagePath === 'menu/jobs') {
         _ticker(moment());
-        let joblistview = new JobListView();
-        jobListSupport.init_plugin(pluginName, joblistview.loadJobsListPage);
+        let joblistroiview = new JobListRoiView();
+        jobListSupport.init_plugin(pluginName, joblistroiview.loadJobsListPage);
     } else if (pagePath === 'scheduledExecution/show') {
-        let joblistview = new JobListView();
-        jobListSupport.init_plugin(pluginName, joblistview.loadJobsShowPage);
+        let joblistroiview = new JobListRoiView();
+        jobListSupport.init_plugin(pluginName, joblistroiview.loadJobsShowPage);
     }
 });
