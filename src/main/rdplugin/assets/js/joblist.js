@@ -144,203 +144,11 @@ jQuery(function () {
     self.id = data.id;
     self.name = ko.observable(data.name);
     self.group = ko.observable(data.group);
-    self.nextExecutionW3CTime = ko.observable(data.nextExecutionW3CTime);
-    self.nextExecutionRelative = ko.computed(function () {
-      var next = self.nextExecutionW3CTime();
-      if (next) {
-        return MomentUtil.formatTimeAtDate(next);
-      }
-      return null;
-    });
-    self.nextExecutionDuration = ko.computed(function () {
-      var next = self.nextExecutionW3CTime();
-      if (next) {
-        var now = _every30s();
-        var ms = moment(next).diff(now);
-        // ms = ms - (ms % 60000);//1 minute interval
-        return MomentUtil.formatDurationMomentHumanize(ms);
-      }
-      return null;
-    });
-    //array of durations in milliseconds
-    self.durations = ko
-      .computed(function () {
-        var durations = [];
-        ko.utils.arrayForEach(self.executions(), function (exec) {
-          var dur = exec.duration();
-          if (dur != null) {
-            durations.push({
-              duration: dur,
-              id: exec.id(),
-              href: exec.permalink(),
-              status: exec.status(),
-            });
-          }
-        });
-        return durations;
-      })
-      .extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
-    self.durationTimes = ko.computed(function () {
-      var arr = self.durations();
-      var times = [];
-      if (arr) {
-        ko.utils.arrayForEach(arr, function (d) {
-          times.push(d.duration);
-        });
-        if (times.length < self.graphOptions().queryMax()) {
-          for (var i = times.length; i < self.graphOptions().queryMax(); i++) {
-            times.push(null);
-          }
-        }
-      }
-      return times;
-    });
-
-    self.durationTimesSuccess = ko.computed(function () {
-      var arr = self.durations();
-      var times = [];
-      if (arr) {
-        ko.utils.arrayForEach(arr, function (d) {
-          if (d.status == "succeeded") {
-            times.push(d.duration);
-          }
-        });
-      }
-      return times;
-    });
-
-    self.durationAverage = ko.computed(function () {
-      var times = ko.utils.arrayFilter(self.durationTimes(), function (e) {
-        return e != null;
-      });
-      if (times && times.length > 1) {
-        var x = 0;
-        ko.utils.arrayForEach(times, function (val) {
-          x += val;
-        });
-        return x / times.length;
-      }
-      return null;
-    });
-    self.durationAverageSuccess = ko.computed(function () {
-      var times = ko.utils.arrayFilter(
-        self.durationTimesSuccess(),
-        function (e) {
-          return e != null;
-        }
-      );
-      if (times && times.length > 1) {
-        var x = 0;
-        ko.utils.arrayForEach(times, function (val) {
-          x += val;
-        });
-        return x / times.length;
-      }
-      return null;
-    });
-
-    self.normalRangeMin = ko.computed(function () {
-      var successOnly = self.graphOptions().normalSuccessOnly();
-      var avg = self.durationAverage();
-      var vals = self.durationTimesSuccess();
-      var avgs = self.durationAverageSuccess();
-      if (successOnly && vals.length < 2) {
-        return null;
-      }
-      avg = successOnly ? avgs : avg;
-      var range = self.graphOptions().normalRangeVar();
-      if (avg) {
-        return avg * (1.0 - range);
-      }
-      return null;
-    });
-    self.normalRangeMax = ko.computed(function () {
-      var successOnly = self.graphOptions().normalSuccessOnly();
-      var avg = self.durationAverage();
-      var vals = self.durationTimesSuccess();
-      var avgs = self.durationAverageSuccess();
-      if (successOnly && vals.length < 2) {
-        return null;
-      }
-      avg = successOnly ? avgs : avg;
-      var range = self.graphOptions().normalRangeVar();
-      if (avg) {
-        return avg * (1.0 + range);
-      }
-      return null;
-    });
-    self.barColorMap = ko.computed(function () {
-      var min = self.normalRangeMin();
-      var max = self.normalRangeMax();
-      if (null == min || null == max) {
-        return jQuery.range_map({ "0:": "#999" });
-      }
-      var map = {};
-      map[Math.floor(max) + ":"] = "red";
-      map[Math.floor(min) + ":" + Math.floor(max)] = "#999";
-      map[":" + Math.floor(min)] = "#99f";
-      // return ['red', 'blue', 'green', 'yellow'];
-      return jQuery.range_map(map);
-    });
-    /**
-     * format values for sparkline tooltips
-     * @param val milliseconds
-     * @returns {*}
-     */
-    self.durationNumberFormatter = function (val) {
-      // numberFormatter
-      if (val < 1000) {
-        return val + "ms";
-      }
-      var str = MomentUtil.formatDurationHumanize(val);
-      if (val < 3000) {
-        str += " (" + val + "ms)";
-      }
-      return str;
-    };
+    self.hasRoiData = ko.observable(data.hasRoiData);
 
     self.total = ko.observable(data.total);
     self.href = ko.observable(data.href);
     self.runhref = ko.observable(data.runhref);
-
-    self.analysis = ko.computed(function () {
-      var failures = 0;
-      var other = 0;
-      var successes = 0;
-      var executions = self.executions();
-      var total = executions.length;
-      var trendsuccess = 0;
-      var trend = true;
-      ko.utils.arrayForEach(executions, function (exec) {
-        if (exec.status() == "failed") {
-          failures++;
-          trend = false;
-        } else if (exec.status() == "succeeded") {
-          successes++;
-          if (trend) {
-            trendsuccess++;
-          }
-        } else {
-          trend = false;
-          other++;
-        }
-      });
-
-      var trendarr = WeatherForecast.calcTrends(executions);
-
-      var weather = WeatherForecast.calcWeather(trendarr);
-
-      return {
-        total: total,
-        failures: failures,
-        successes: successes,
-        other: other,
-        runsuccess: trendsuccess,
-        trendstr: trendarr.join(""),
-        weather: weather.weather,
-        weathercount: weather.weathercount,
-      };
-    });
 
     self.mapping = {
       executions: {
@@ -510,6 +318,7 @@ jQuery(function () {
     self.hasJobFavorites = ko.computed(function () {
       return self.jobfavorites() != null;
     });
+
     self.loadJobFavorites = function (favset) {
       for (var x = 0; x < favset.length; x++) {
         var job = self.jobmap[favset[x].id()];
@@ -542,6 +351,7 @@ jQuery(function () {
         }
       });
     });
+
     self.refreshRunningData = function () {
       jQuery.ajax({
         url: _genUrl(appLinks.menuNowrunningAjax),
@@ -568,6 +378,7 @@ jQuery(function () {
         },
       });
     };
+
     self.refreshExecData = function () {
       // self.refreshRunningData();
       ko.utils.arrayForEach(self.jobs(), function (job) {
@@ -594,6 +405,7 @@ jQuery(function () {
           href: link ? link.attr("href") : null,
           runhref: runlink ? runlink.attr("href") : null,
           graphOptions: self.graphOptions, //copy same observable to jobs
+          hasRoiData: false,
         });
         jobsarr.push(job);
         self.jobmap[jobid] = job;

@@ -35,6 +35,7 @@
         </div>
 
     </div>
+    <span><i>No ROI data found might signify that there are no metrics set against the job, or the job has not run.</i></span>
     <table class="table table-bordered table-hover table-compact">
         <tbody>
             <tr>
@@ -47,21 +48,13 @@
         <tbody data-bind="foreach: joblist.jobsListed">
             <tr>
                 <td>
-                    <span data-bind="if: $root.hasJobFavorites">
-                        <span data-bind="if: jobFav()!=null">
-                            <span data-bind="with: jobFav">
-                                <span class=" action" data-bind="css: favCss, attr: favAttrs, click: toggleFav">
-                                    <i class="glyphicon " data-bind="css: favIcon"></i>
-                                </span>
-                            </span>
-                        </span>
-                    </span>
                     <span data-bind="if: href()">
                         <a href="#"
-                            data-bind="text: name, attr: {href: href, title: statusText}, css: status, bootstrapTooltip: statusText"></a>
+                            data-bind="text: name, attr: {href: href, title: name}"></a>
                     </span>
                     <span data-bind="if: !href()">
-                        <span href="#" data-bind="text: name, css: status, bootstrapTooltip: statusText"></span>
+                        <span
+                            data-bind="text: name"></span>
                     </span>
                 </td>
                 <td data-bind="text: group"></td>
@@ -75,6 +68,9 @@
                         <span class="text-info" data-bind="text: $data.total"></span>
                         %%executions saving%% <span class="text-info" data-bind="text: roiTotal"></span>
                         %%hours%% - <i><span class="text-info" data-bind="text: roiDescription"></i></span>
+                    </span>
+                    <span data-bind="if: !hasRoiData">
+                        No ROI data found
                     </span>
                 </td>
             </tr>
