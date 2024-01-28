@@ -12,17 +12,6 @@ jQuery(function () {
       _ticker(moment());
     }, 1000);
   }
-  var _every30s = ko
-    .computed(function () {
-      return _ticker();
-    })
-    .extend({ rateLimit: { timeout: 30000 } });
-
-  var _every60s = ko
-    .computed(function () {
-      return _ticker();
-    })
-    .extend({ rateLimit: { timeout: 60000 } });
 
   function ListJobExec(data) {
     var self = this;
@@ -60,14 +49,6 @@ jQuery(function () {
     });
     self.user = ko.observable(data.user);
 
-    self.dateCompletedRelative = ko.computed(function () {
-      var next = self.dateEnded();
-      if (next) {
-        return MomentUtil.formatTimeAtDate(next);
-      }
-      return null;
-    });
-
     self.durationHumanized = ko.computed(function () {
       var ms = self.duration();
       if (ms != null) {
@@ -77,42 +58,6 @@ jQuery(function () {
         return MomentUtil.formatDurationHumanize(ms);
       }
       return null;
-    });
-    self.statusCss = ko.computed(function () {
-      var status = self.status();
-      var selected = self.selected()
-        ? " sparkline-box selected"
-        : " sparkline-box";
-
-      if (status == "succeeded") {
-        return "text-success" + selected;
-      } else if (status == "failed") {
-        return "text-danger" + selected;
-      } else if (status == "aborted") {
-        return "text-muted" + selected;
-      } else if (status == "running") {
-        return "text-info" + selected;
-      } else if (status == "scheduled") {
-        return "text-info" + selected;
-      } else {
-        return "text-warning" + selected;
-      }
-    });
-    self.statusIcon = ko.computed(function () {
-      var status = self.status();
-      if (status == "succeeded") {
-        return "glyphicon-ok-circle";
-      } else if (status == "failed") {
-        return "glyphicon-exclamation-sign";
-      } else if (status == "aborted") {
-        return "glyphicon-remove-circle";
-      } else if (status == "running") {
-        return "glyphicon-play-circle";
-      } else if (status == "scheduled") {
-        return "glyphicon-time";
-      } else {
-        return "glyphicon-asterisk";
-      }
     });
     self.title = ko.computed(function () {
       var status = self.status();
@@ -137,7 +82,6 @@ jQuery(function () {
     var self = this;
     self.graphOptions = data.graphOptions;
     self.executions = ko.observableArray([]);
-    self.jobFav = ko.observable();
 
     self.nowrunning = ko.observableArray([]);
     self.scheduled = ko.observableArray([]);
@@ -149,6 +93,8 @@ jQuery(function () {
     self.total = ko.observable(data.total);
     self.href = ko.observable(data.href);
     self.runhref = ko.observable(data.runhref);
+
+    self.roiDictionary = ko.observable({});
 
     self.mapping = {
       executions: {
@@ -182,6 +128,7 @@ jQuery(function () {
         },
       },
     };
+
     self.refreshData = function () {
       //load exec info
       var url = appLinks.scheduledExecutionJobExecutionsAjax;
@@ -205,16 +152,36 @@ jQuery(function () {
       var detailurl = _genUrl(appLinks.scheduledExecutionDetailFragmentAjax, {
         id: self.id,
       });
+
       jQuery.ajax({
         url: detailurl,
         method: "GET",
         contentType: "json",
         success: function (data) {
-          // console.log("detail for " + job.id, data);
-          // var executions=data.executions||[];
           ko.mapping.fromJS(data, self.mapping, self);
+
+          var executions = data.executions || [];
+          var executionDetailUrl = executions[0].href;
+          var response = JSON.parse(data);
+          var key = response.job.id;
+          if (!roiDictionary.hasOwnProperty(key)) {
+            jQuery.ajax({
+              url: executionDetailUrl + "/roimetrics/data",
+              method: "GET",
+              contentType: "json",
+              success: function (data) {
+                var metricsData = JSON.parse(data);
+                if ("hours" in metricsData) {
+                  if (parseInt(metricsData.hours) != NaN) {
+                    roiDictionary[key] = metricsData;
+                  }
+                }
+              },
+            });
+          }
         },
       });
+
       jQuery.ajax({
         url: execsurl,
         method: "GET",
@@ -285,18 +252,9 @@ jQuery(function () {
 
   function JobRoiListView() {
     var self = this;
-    self.jobfavorites = ko.observable();
-    self.jobfavsOnly = ko.observable(false);
     self.jobs = ko.observableArray([]);
     self.jobsListed = ko.computed(function () {
-      var jobfavs = self.jobfavsOnly();
-      var alljobs = self.jobs();
-      if (!jobfavs) {
-        return alljobs;
-      }
-      return ko.utils.arrayFilter(self.jobs(), function (j) {
-        return j.jobFav() && j.jobFav().fav();
-      });
+      return self.jobs();
     });
     self.jobmap = {};
     self.nowrunning = ko
@@ -314,43 +272,6 @@ jQuery(function () {
       })
     );
     self.graphShowHelpText = ko.observable(false);
-
-    self.hasJobFavorites = ko.computed(function () {
-      return self.jobfavorites() != null;
-    });
-
-    self.loadJobFavorites = function (favset) {
-      for (var x = 0; x < favset.length; x++) {
-        var job = self.jobmap[favset[x].id()];
-        if (job) {
-          job.jobFav(favset[x]);
-        }
-      }
-    };
-
-    self.registerJobFavorites = function (jobfavorites) {
-      self.loadJobFavorites(jobfavorites.favset());
-      self.jobfavorites(jobfavorites);
-      jobfavorites.favsonly.subscribe(self.jobfavsOnly);
-      self.jobfavsOnly(jobfavorites.favsonly());
-    };
-    self.onLoadedJobFavoritesEvent = function (evt) {
-      self.registerJobFavorites(evt.relatedTarget);
-    };
-
-    self.graphOptions().normalOption.subscribe(function (val) {
-      var pct = val === "Average" ? 0.01 : 0.1;
-      self.graphOptions().normalRangeVar(pct);
-    });
-
-    self.nowrunning.subscribe(function (newdata) {
-      ko.utils.arrayForEach(newdata, function (exec) {
-        var job = self.jobmap[exec.jobId()];
-        if (job) {
-          job.nowrunning.push(exec);
-        }
-      });
-    });
 
     self.refreshRunningData = function () {
       jQuery.ajax({
@@ -398,6 +319,9 @@ jQuery(function () {
         var jobgroup = jel.data("jobGroup");
         var link = jel.find("a.hover_show_job_info");
         var runlink = jel.find("a.act_execute_job");
+        // var roiData = self.roiDictionary.hasOwnProperty(jobid)
+        //   ? self.roiDictionary[jobid]
+        //   : null;
         var job = new ListJob({
           id: jobid,
           name: jobname,
@@ -405,7 +329,9 @@ jQuery(function () {
           href: link ? link.attr("href") : null,
           runhref: runlink ? runlink.attr("href") : null,
           graphOptions: self.graphOptions, //copy same observable to jobs
-          hasRoiData: false,
+          hasRoiData: false, //roiData != null,
+          //   roiDescription: "Hours saved",
+          //   jobRoiTotal: roiData != null ? roiData.hours : 0,
         });
         jobsarr.push(job);
         self.jobmap[jobid] = job;
@@ -417,12 +343,15 @@ jQuery(function () {
       var jobid = jobDetail.id;
       var jobname = jobDetail.name;
       var jobgroup = jobDetail.group;
+      var roiData = self.roiDictionary.hasOwnProperty(jobid);
       var job = new ListJob({
         id: jobid,
         name: jobname,
         group: jobgroup,
         graphOptions: self.graphOptions, //copy same observable to jobs
-        hasRoiData: false,
+        hasRoiData: roiData != null,
+        roiDescription: "Hours saved",
+        jobRoiTotal: roiData != null ? roiData.hours : 0,
       });
       var jobsarr = [job];
       self.jobmap[jobid] = job;
@@ -534,17 +463,6 @@ jQuery(function () {
       jQuery(tablink).on("shown.bs.tab", function () {
         self.refreshExecData();
       });
-
-      if (window.favjobs) {
-        self.registerJobFavorites(window.favjobs);
-        //force move of controls to tabbar if already loaded
-        window.favjobs.addControlsToPage();
-      } else {
-        jQuery(document).on(
-          "loaded.rundeck.plugin.jobfavorites",
-          self.onLoadedJobFavoritesEvent
-        );
-      }
 
       self.loadComplete();
     };

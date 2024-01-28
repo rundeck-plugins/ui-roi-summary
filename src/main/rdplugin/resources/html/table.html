@@ -66,7 +66,7 @@
                 <td>
                     <span data-bind="if: hasRoiData()">
                         <span class="text-info" data-bind="text: $data.total"></span>
-                        %%executions saving%% <span class="text-info" data-bind="text: roiTotal"></span>
+                        executions, saving <span class="text-info" data-bind="text: jobRoiTotal"></span>
                         %%hours%% - <i><span class="text-info" data-bind="text: roiDescription"></i></span>
                     </span>
                     <span data-bind="if: !hasRoiData()">
