@@ -2,6 +2,10 @@
 
 This is a Rundeck UI plugin that shows a table list view of Rundeck jobs with ROI data
 
+<p align="center">
+  <img src="docs/roi-summary.png" alt="ROI Summary screen shot">
+</p>
+
 ## Build
 
 Using gradle:

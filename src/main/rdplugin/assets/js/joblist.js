@@ -422,6 +422,7 @@ jQuery(function () {
         name: jobname,
         group: jobgroup,
         graphOptions: self.graphOptions, //copy same observable to jobs
+        hasRoiData: false,
       });
       var jobsarr = [job];
       self.jobmap[jobid] = job;
