@@ -1,24 +1,15 @@
-name: ui-roi-summary
-display: Job List ROI Summary View
-rundeckPluginVersion: 2.0
+name: ui-roisummary
+rundeckPluginVersion: 1.2
 author: Eric Chapman
-description: Table list view of Jobs with statistics
-rundeckCompatibilityVersion: 3.x
-targetHostCompatibility: unix
-license: Apache 2.0
-sourceLink: https://github.com/echapmanFromBunnings/ui-roi-summary
-docsLink: https://github.com/echapmanFromBunnings/ui-roi-summary
-tags:
-    - script
-    - UI
+url: https://github.com/echapmanFromBunnings/ui-roi-summary
 date: 2024-01-15T19:50:16.097Z
 version: 0.0.1
 providers:
     - name: ui-roisummary
       service: UI
       plugin-type: ui
-      title: ui-roisummary
-      description: Table list view of Jobs with ROI data
+      title: "ROI Summary"
+      description: "Job List with ROI Summary View"
       ui:
         - pages: '*'
           scripts:

@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get Fetch Tags
@@ -26,7 +26,7 @@ jobs:
       - name: show all assets built
         run: find build/ -ls
       - name: Upload jar
-        uses: actions/upload-artifact@v1.0.0
+        uses: actions/upload-artifact@v4
         with:
-          name: ui-job-list-${{ steps.get_version.outputs.VERSION }}
-          path: build/distributions/ui-job-list-${{ steps.get_version.outputs.VERSION }}.zip
+          name: ui-roisummary-${{ steps.get_version.outputs.VERSION }}
+          path: build/distributions/ui-roisummary-${{ steps.get_version.outputs.VERSION }}.zip
