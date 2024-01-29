@@ -94,8 +94,6 @@ jQuery(function () {
     self.href = ko.observable(data.href);
     self.runhref = ko.observable(data.runhref);
 
-    self.roiDictionary = ko.observable({});
-
     self.mapping = {
       executions: {
         create: function (options) {
@@ -159,26 +157,6 @@ jQuery(function () {
         contentType: "json",
         success: function (data) {
           ko.mapping.fromJS(data, self.mapping, self);
-
-          var executions = data.executions || [];
-          var executionDetailUrl = executions[0].href;
-          var response = JSON.parse(data);
-          var key = response.job.id;
-          if (!roiDictionary.hasOwnProperty(key)) {
-            jQuery.ajax({
-              url: executionDetailUrl + "/roimetrics/data",
-              method: "GET",
-              contentType: "json",
-              success: function (data) {
-                var metricsData = JSON.parse(data);
-                if ("hours" in metricsData) {
-                  if (parseInt(metricsData.hours) != NaN) {
-                    roiDictionary[key] = metricsData;
-                  }
-                }
-              },
-            });
-          }
         },
       });
 
@@ -187,8 +165,6 @@ jQuery(function () {
         method: "GET",
         contentType: "json",
         success: function (data) {
-          // console.log("execs for " + self.id, data);
-          // var executions=data.executions||[];
           var completed = ko.utils.arrayFilter(data.executions, function (e) {
             return e.status != "running" && e.status != "scheduled";
           });
@@ -253,6 +229,7 @@ jQuery(function () {
       return self.jobs();
     });
     self.jobmap = {};
+    self.roimap = {};
     self.nowrunning = ko
       .observableArray([])
       .extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
@@ -284,9 +261,9 @@ jQuery(function () {
         var jobgroup = jel.data("jobGroup");
         var link = jel.find("a.hover_show_job_info");
         var runlink = jel.find("a.act_execute_job");
-        // var roiData = self.roiDictionary.hasOwnProperty(jobid)
-        //   ? self.roiDictionary[jobid]
-        //   : null;
+        var roiData = self.roimap.hasOwnProperty(jobid)
+          ? self.roimap[jobid]
+          : null;
         var job = new ListJob({
           id: jobid,
           name: jobname,
@@ -294,7 +271,8 @@ jQuery(function () {
           href: link ? link.attr("href") : null,
           runhref: runlink ? runlink.attr("href") : null,
           graphOptions: self.graphOptions, //copy same observable to jobs
-          hasRoiData: false,
+          hasRoiData: roiData != null,
+          jobRoiTotal: roiData != null ? roiData.hours : 0,
           roiDescription: "Hours saved",
         });
         jobsarr.push(job);
@@ -337,11 +315,10 @@ jQuery(function () {
             ko.mapping.fromJS(data, self.mapping, self);
 
             if (data.job) {
-              var response = JSON.parse(data);
-              var executionDetailUrl = response.job.href;
+              var executionDetailUrl = data.job.href;
 
-              var key = response.job.id;
-              if (!roiDictionary.hasOwnProperty(key)) {
+              var key = data.job.id;
+              if (!self.roimap.hasOwnProperty(key)) {
                 jQuery.ajax({
                   url: executionDetailUrl + "/roimetrics/data",
                   method: "GET",
@@ -350,7 +327,7 @@ jQuery(function () {
                     var metricsData = JSON.parse(data);
                     if ("hours" in metricsData) {
                       if (parseInt(metricsData.hours) != NaN) {
-                        roiDictionary[key] = metricsData;
+                        roimap[key] = metricsData;
                       }
                     }
                   },
