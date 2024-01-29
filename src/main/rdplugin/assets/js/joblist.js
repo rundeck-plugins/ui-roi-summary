@@ -243,10 +243,6 @@ jQuery(function () {
 
   function GraphOptions(data) {
     var self = this;
-    self.normalRangeVar = ko.observable(data.normalRangeVar || 0.01);
-    self.showNormal = ko.observable(data.showNormal || false);
-    self.normalSuccessOnly = ko.observable(data.normalSuccessOnly || true);
-    self.normalOption = ko.observable(data.normalOption || "Average");
     self.queryMax = ko.observable(data.queryMax || 10);
   }
 
@@ -264,41 +260,10 @@ jQuery(function () {
 
     self.graphOptions = ko.observable(
       new GraphOptions({
-        normalRangeVar: 0.01,
-        showNormal: false,
-        normalSuccessOnly: true,
-        normalOption: "Average",
         queryMax: 10,
       })
     );
     self.graphShowHelpText = ko.observable(false);
-
-    self.refreshRunningData = function () {
-      jQuery.ajax({
-        url: _genUrl(appLinks.menuNowrunningAjax),
-        method: "GET",
-        contentType: "json",
-        success: function (data) {
-          //console.log("nowrunning ", data);
-          // ko.mapping.fromJS(data, job.mapping, job);
-          //job.executions(data.executions);
-          ko.mapping.fromJS(
-            data,
-            {
-              nowrunning: {
-                create: function (options) {
-                  return new ListJobExec(options.data);
-                },
-                key: function (data) {
-                  return ko.utils.unwrapObservable(data.id || data.executionId);
-                },
-              },
-            },
-            self
-          );
-        },
-      });
-    };
 
     self.refreshExecData = function () {
       // self.refreshRunningData();
@@ -329,9 +294,8 @@ jQuery(function () {
           href: link ? link.attr("href") : null,
           runhref: runlink ? runlink.attr("href") : null,
           graphOptions: self.graphOptions, //copy same observable to jobs
-          hasRoiData: false, //roiData != null,
-          //   roiDescription: "Hours saved",
-          //   jobRoiTotal: roiData != null ? roiData.hours : 0,
+          hasRoiData: false,
+          roiDescription: "Hours saved",
         });
         jobsarr.push(job);
         self.jobmap[jobid] = job;
@@ -358,6 +322,46 @@ jQuery(function () {
       self.jobs(jobsarr);
       return job;
     };
+
+    self.loadROI = function () {
+      ko.utils.arrayForEach(self.jobs(), function (job) {
+        var detailurl = _genUrl(appLinks.scheduledExecutionDetailFragmentAjax, {
+          id: job.id,
+        });
+
+        jQuery.ajax({
+          url: detailurl,
+          method: "GET",
+          contentType: "json",
+          success: function (data) {
+            ko.mapping.fromJS(data, self.mapping, self);
+
+            if (data.job) {
+              var response = JSON.parse(data);
+              var executionDetailUrl = response.job.href;
+
+              var key = response.job.id;
+              if (!roiDictionary.hasOwnProperty(key)) {
+                jQuery.ajax({
+                  url: executionDetailUrl + "/roimetrics/data",
+                  method: "GET",
+                  contentType: "json",
+                  success: function (data) {
+                    var metricsData = JSON.parse(data);
+                    if ("hours" in metricsData) {
+                      if (parseInt(metricsData.hours) != NaN) {
+                        roiDictionary[key] = metricsData;
+                      }
+                    }
+                  },
+                });
+              }
+            }
+          },
+        });
+      });
+    };
+
     self.loadComplete = function () {
       window.joblistroiview = self;
 
@@ -367,6 +371,7 @@ jQuery(function () {
         })
       );
     };
+
     self.setupKnockout = function () {
       jobListSupport.setup_ko_loader("ui-roisummary", pluginBase, pluginName);
 
@@ -387,65 +392,11 @@ jQuery(function () {
         },
       };
     };
-    self.loadJobsShowPage = function () {
-      var job = self.loadShowPageSingleJob();
-      self.setupKnockout();
-      self.graphShowHelpText(true);
-      var myViewmodel = {
-        dash: self,
-        job: job,
-      };
-      self.refreshExecData();
-      setInterval(function () {
-        self.refreshExecData();
-      }, 30000);
 
-      //create new 12 column card for sparkline and config controls
-      let sparklineCard = jQuery(`
-<div >
-
-</div>
-`);
-      if (typeof window._rundeckui !== "undefined") {
-        window._rundeckui.scheduledExecution.show.addJobStatsContent({
-          after: true,
-          content: sparklineCard,
-        });
-      } else {
-        var target = jQuery("#_job_stats_extra_placeholder");
-        target.append(sparklineCard);
-      }
-      ko.applyBindings(myViewmodel, sparklineCard[0]);
-
-      let newColumn = jQuery(`
-
-`);
-      if (typeof window._rundeckui !== "undefined") {
-        window._rundeckui.scheduledExecution.show.addJobStatsItem({
-          before: true,
-          content: newColumn,
-        });
-      } else {
-        var div = jQuery("div.jobstats");
-        if (div) {
-          //prepend a new card into the columns listing the job stats
-
-          let tablerows = div.find(".job-stats-item");
-          if (tablerows.length < 1) {
-            return;
-          }
-          let col1 = tablerows[0];
-          tablerows.removeClass("col-sm-4").addClass("col-sm-3");
-
-          jQuery(col1).before(newColumn);
-        }
-      }
-
-      ko.applyBindings(myViewmodel, newColumn[0]);
-      self.loadComplete();
-    };
     self.loadJobsListPage = function () {
       self.loadJobs();
+      //load ROI data from jobs
+      self.loadROI();
       self.setupKnockout();
       let tablink = jobListSupport.initPage(
         "#indexMain",
@@ -472,8 +423,5 @@ jQuery(function () {
     _ticker(moment());
     let joblistroiview = new JobRoiListView();
     jobListSupport.init_plugin(pluginName, joblistroiview.loadJobsListPage);
-  } else if (pagePath === "scheduledExecution/show") {
-    let joblistroiview = new JobRoiListView();
-    jobListSupport.init_plugin(pluginName, joblistroiview.loadJobsShowPage);
   }
 });
