@@ -138,18 +138,7 @@ jQuery(function () {
         id: self.id,
         max: self.graphOptions().queryMax(),
         format: "json",
-      });
-      var runningurl = _genUrl(url, {
-        id: self.id,
-        max: self.graphOptions().queryMax(),
-        format: "json",
-        status: "running",
-      });
-      var schedurl = _genUrl(url, {
-        id: self.id,
-        max: self.graphOptions().queryMax(),
-        format: "json",
-        status: "scheduled",
+        status: "succeeded"
       });
       var detailurl = _genUrl(appLinks.scheduledExecutionDetailFragmentAjax, {
         id: self.id,
