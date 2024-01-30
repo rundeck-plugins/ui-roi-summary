@@ -94,6 +94,10 @@ jQuery(function () {
     self.href = ko.observable(data.href);
     self.runhref = ko.observable(data.runhref);
 
+    self.jobRoiPerUnitTotal = ko.observable(data.jobRoiPerUnitTotal);
+    self.jobRoiTotal = ko.observable("");
+    self.roiDescription = ko.observable(data.roiDescription);
+
     self.mapping = {
       executions: {
         create: function (options) {
@@ -165,6 +169,8 @@ jQuery(function () {
         method: "GET",
         contentType: "json",
         success: function (data) {
+          // console.log("execs for " + self.id, data);
+          // var executions=data.executions||[];
           var completed = ko.utils.arrayFilter(data.executions, function (e) {
             return e.status != "running" && e.status != "scheduled";
           });
@@ -174,46 +180,47 @@ jQuery(function () {
             self.mapping,
             self
           );
-          jQuery.ajax({
-            url: runningurl,
-            method: "GET",
-            contentType: "json",
-            success: function (data2) {
-              // console.log("running for " + self.id, data2);
-              var running = ko.utils.arrayFilter(
-                data2.executions,
-                function (e) {
-                  return e.status == "running";
-                }
-              );
-              ko.mapping.fromJS({ nowrunning: running }, self.mapping, self);
 
-              jQuery.ajax({
-                url: schedurl,
-                method: "GET",
-                contentType: "json",
-                success: function (data3) {
-                  // console.log("scheduled for " + self.id, data3);
-                  var scheduled = ko.utils.arrayFilter(
-                    data3.executions,
-                    function (e) {
-                      return e.status != "running";
+          if(completed.length > 0){
+            var executions = completed[0];
+            if(executions){    
+              
+              //might need to check your measuring against a completed execution
+              var executionDetailUrl = executions.href;
+              var currentTotal = self.jobRoiPerUnitTotal()();
+              if (currentTotal == 0.0) {
+                jQuery.ajax({
+                  url: executionDetailUrl + "/roimetrics/data",
+                  method: "GET",
+                  contentType: "json",
+                  success: function (innerdata) {
+                    if ("hours" in innerdata) {
+                      var parsedNumber = parseFloat(parseFloat(innerdata.hours).toFixed(2));
+                      if (!isNaN(parsedNumber)) {
+                        self.jobRoiPerUnitTotal(parsedNumber);
+                        self.hasRoiData(true);
+                      }
                     }
-                  );
-                  ko.mapping.fromJS(
-                    { scheduled: scheduled },
-                    self.mapping,
-                    self
-                  );
-                },
-              });
-            },
-          });
+                  },
+                });
+              }
+            }
+          }
         },
       });
     };
+
+    self.refreshTotalRoi = function () {
+      var total = ((self.jobRoiPerUnitTotal())*(self.total())).toFixed(2);
+      self.jobRoiTotal(total);
+    };
+
     self.graphOptions().queryMax.subscribe(function (val) {
       self.refreshData();
+    });
+
+    self.jobRoiPerUnitTotal.subscribe(function (val) {
+      self.refreshTotalRoi();
     });
   }
 
@@ -229,7 +236,6 @@ jQuery(function () {
       return self.jobs();
     });
     self.jobmap = {};
-    self.roimap = {};
     self.nowrunning = ko
       .observableArray([])
       .extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
@@ -243,14 +249,12 @@ jQuery(function () {
     self.graphShowHelpText = ko.observable(false);
 
     self.refreshExecData = function () {
-      // self.refreshRunningData();
       ko.utils.arrayForEach(self.jobs(), function (job) {
         job.refreshData();
       });
     };
 
     //load job list
-
     self.loadJobs = function () {
       var foundJobs = jQuery(".jobname[data-job-id]");
       var jobsarr = [];
@@ -261,9 +265,6 @@ jQuery(function () {
         var jobgroup = jel.data("jobGroup");
         var link = jel.find("a.hover_show_job_info");
         var runlink = jel.find("a.act_execute_job");
-        var roiData = self.roimap.hasOwnProperty(jobid)
-          ? self.roimap[jobid]
-          : null;
         var job = new ListJob({
           id: jobid,
           name: jobname,
@@ -271,8 +272,8 @@ jQuery(function () {
           href: link ? link.attr("href") : null,
           runhref: runlink ? runlink.attr("href") : null,
           graphOptions: self.graphOptions, //copy same observable to jobs
-          hasRoiData: roiData != null,
-          jobRoiTotal: roiData != null ? roiData.hours : 0,
+          hasRoiData: false,
+          jobRoiPerUnitTotal: ko.observable(0.0),
           roiDescription: "Hours saved",
         });
         jobsarr.push(job);
@@ -285,58 +286,19 @@ jQuery(function () {
       var jobid = jobDetail.id;
       var jobname = jobDetail.name;
       var jobgroup = jobDetail.group;
-      var roiData = self.roiDictionary.hasOwnProperty(jobid);
       var job = new ListJob({
         id: jobid,
         name: jobname,
         group: jobgroup,
         graphOptions: self.graphOptions, //copy same observable to jobs
-        hasRoiData: roiData != null,
+        hasRoiData: false,//roiData != null,
         roiDescription: "Hours saved",
-        jobRoiTotal: roiData != null ? roiData.hours : 0,
+        jobRoiPerUnitTotal: ko.observable(0.0)
       });
       var jobsarr = [job];
       self.jobmap[jobid] = job;
       self.jobs(jobsarr);
       return job;
-    };
-
-    self.loadROI = function () {
-      ko.utils.arrayForEach(self.jobs(), function (job) {
-        var detailurl = _genUrl(appLinks.scheduledExecutionDetailFragmentAjax, {
-          id: job.id,
-        });
-
-        jQuery.ajax({
-          url: detailurl,
-          method: "GET",
-          contentType: "json",
-          success: function (data) {
-            ko.mapping.fromJS(data, self.mapping, self);
-
-            if (data.job) {
-              var executionDetailUrl = data.job.href;
-
-              var key = data.job.id;
-              if (!self.roimap.hasOwnProperty(key)) {
-                jQuery.ajax({
-                  url: executionDetailUrl + "/roimetrics/data",
-                  method: "GET",
-                  contentType: "json",
-                  success: function (data) {
-                    var metricsData = JSON.parse(data);
-                    if ("hours" in metricsData) {
-                      if (parseInt(metricsData.hours) != NaN) {
-                        roimap[key] = metricsData;
-                      }
-                    }
-                  },
-                });
-              }
-            }
-          },
-        });
-      });
     };
 
     self.loadComplete = function () {
@@ -372,8 +334,6 @@ jQuery(function () {
 
     self.loadJobsListPage = function () {
       self.loadJobs();
-      //load ROI data from jobs
-      self.loadROI();
       self.setupKnockout();
       let tablink = jobListSupport.initPage(
         "#indexMain",

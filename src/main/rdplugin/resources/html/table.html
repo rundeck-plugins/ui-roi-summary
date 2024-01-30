@@ -66,8 +66,11 @@
                 <td>
                     <span data-bind="if: hasRoiData()">
                         <span class="text-info" data-bind="text: $data.total"></span>
-                        executions, saving <span class="text-info" data-bind="text: jobRoiTotal"></span>
-                        %%hours%% - <i><span class="text-info" data-bind="text: roiDescription"></i></span>
+                        executions, saving <span class="text-info" data-bind="text: jobRoiPerUnitTotal"></span> per run = 
+                        <i>
+                            <span class="text-info" data-bind="text: jobRoiTotal"></span>
+                            <span class="text-info" data-bind="text: roiDescription"></span>
+                        </i>
                     </span>
                     <span data-bind="if: !hasRoiData()">
                         No ROI data found
