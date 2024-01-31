@@ -1,18 +1,18 @@
 <div>
     <div class="">
         <a style="margin-bottom:1em;" class="btn btn-default btn-xs pull-right" data-toggle="modal"
-            href="#joblistViewOptions">
+            href="#joblistRoiViewOptions">
             %%Time Span%%
             <i class="glyphicon glyphicon-cog"></i>
         </a>
 
-        <div class="modal fade" id="joblistViewOptions" role="dialog" aria-labelledby="joblistViewOptionsModalLabel"
+        <div class="modal fade" id="joblistRoiViewOptions" role="dialog" aria-labelledby="joblistRoiViewOptionsModalLabel"
             aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title" id="joblistViewOptionsModalLabel">%%Time Window%%</h4>
+                        <h4 class="modal-title" id="joblistRoiViewOptionsModalLabel">%%Time Window%%</h4>
                     </div>
 
                     <div class="modal-body container form form-horizontal">
@@ -20,9 +20,18 @@
                             <label class="control-label col-sm-2">%%Last Howmany Days%%: </label>
                             <div class="col-sm-10 form-inline">
                                 <label>
-                                    <input type="number" data-bind="value: joblist.graphOptions().queryMax"
-                                        class="form-control">
+                                    <input type="number" data-bind="value: jobroilist.graphOptions().queryMax"
+                                        class="form-control" />
                                     %%Days%%
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-sm-2">%%Hourly Value%%: </label>
+                            <div class="col-sm-10 form-inline">
+                                <label>
+                                    <input type="number" data-bind="value: jobroilist.graphOptions().hourlyCost"
+                                        class="form-control" />
                                 </label>
                             </div>
                         </div>
@@ -45,7 +54,7 @@
                 <th class=" text-center h5 text-header">%%Hours Saved%%</th>
             </tr>
         </tbody>
-        <tbody data-bind="foreach: joblist.jobsListed">
+        <tbody data-bind="foreach: jobroilist.jobsListed">
             <tr>
                 <td>
                     <span data-bind="if: href()">
@@ -70,7 +79,7 @@
                         <i>
                             <span class="text-info" data-bind="text: jobRoiTotal"></span>
                             <span class="text-info" data-bind="text: roiDescription"></span>
-                        </i>
+                        </i> - <span class="text-info" data-bind="text: roiCalculation"></span>
                     </span>
                     <span data-bind="if: !hasRoiData()">
                         No ROI data found

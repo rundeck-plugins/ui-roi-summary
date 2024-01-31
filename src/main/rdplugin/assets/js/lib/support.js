@@ -123,7 +123,7 @@ ${tabA}${tabB}
                     markupString = markupString.replace(/\$\$([\$\w\.\(\)\+]+)/g, function (match, g1) {
                         return "<span data-bind=\"text: " + g1 + "\"></span>";
                     }).replace(/%{2}([^<>]+?)%{2}/g, function (match, g1) {
-                        return "<span data-bind=\"uijoblistPluginMessage: '" + (templateConfig.pluginName || 'true') + "'\">" + g1 + "</span>";
+                        return "<span data-bind=\"uijobroilistPluginMessage: '" + (templateConfig.pluginName || 'true') + "'\">" + g1 + "</span>";
                     });
                     ko.components.defaultLoader.loadTemplate(name, markupString, callback);
                 });
@@ -184,7 +184,7 @@ ${tabA}${tabB}
     }
 
     function _setup_ko_extenders() {
-        ko.bindingHandlers.uijoblistPluginMessage = {
+        ko.bindingHandlers.uijobroilistPluginMessage = {
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
 
                 var text = jQuery(element).text().trim();
@@ -198,7 +198,7 @@ ${tabA}${tabB}
                 ko.utils.setTextContent(element, text);
             }
         };
-        ko.bindingHandlers.uijoblistPluginMessageTemplate = {
+        ko.bindingHandlers.uijobroilistPluginMessageTemplate = {
             init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
                 var text = jQuery(element).text().trim();
                 jQuery(element).data('ko-uimessage-template', text);

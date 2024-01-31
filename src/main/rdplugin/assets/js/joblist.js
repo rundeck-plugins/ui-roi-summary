@@ -18,64 +18,6 @@ jQuery(function () {
     self.id = ko.observable(data.id || data.executionId);
     self.jobId = ko.observable(data.jobId);
     self.status = ko.observable(data.status);
-    self.customStatus = ko.observable(data.customStatus);
-    self.permalink = ko.observable(data.permalink || data.executionHref);
-    self.dateEnded = ko.observable(
-      data.dateEnded || data["date-ended"] ? data["date-ended"]["date"] : null
-    );
-    self.dateEndedUnixtime = ko.observable(
-      data.dateEndedUnixtime || data["date-ended"]
-        ? data["date-ended"]["unixtime"]
-        : null
-    );
-    self.dateStarted = ko.observable(
-      data.dateStarted || data["date-started"]
-        ? data["date-started"]["date"]
-        : null
-    );
-    self.dateStartedUnixtime = ko.observable(
-      data.dateStarted || data["date-started"]
-        ? data["date-started"]["unixtime"]
-        : null
-    );
-    self.selected = ko.observable(false);
-    self.duration = ko.computed(function () {
-      var de = self.dateEndedUnixtime();
-      var ds = self.dateStartedUnixtime();
-      if (de && ds) {
-        return de > ds ? de - ds : 0;
-      }
-      return null;
-    });
-    self.user = ko.observable(data.user);
-
-    self.durationHumanized = ko.computed(function () {
-      var ms = self.duration();
-      if (ms != null) {
-        if (ms < 1000) {
-          return ms + "ms";
-        }
-        return MomentUtil.formatDurationHumanize(ms);
-      }
-      return null;
-    });
-    self.title = ko.computed(function () {
-      var status = self.status();
-      var customStatus = self.customStatus();
-      if (status === "other" && customStatus) {
-        status = '"' + customStatus + '"';
-      }
-      return (
-        "#" +
-        self.id() +
-        " " +
-        status +
-        " (" +
-        self.durationHumanized() +
-        ") by " +
-        self.user()
-      );
-    });
   }
 
   function ListJob(data) {
@@ -83,8 +25,6 @@ jQuery(function () {
     self.graphOptions = data.graphOptions;
     self.executions = ko.observableArray([]);
 
-    self.nowrunning = ko.observableArray([]);
-    self.scheduled = ko.observableArray([]);
     self.id = data.id;
     self.name = ko.observable(data.name);
     self.group = ko.observable(data.group);
@@ -97,6 +37,7 @@ jQuery(function () {
     self.jobRoiPerUnitTotal = ko.observable(data.jobRoiPerUnitTotal);
     self.jobRoiTotal = ko.observable("");
     self.roiDescription = ko.observable(data.roiDescription);
+    self.roiCalculation = ko.observable("");
 
     self.mapping = {
       executions: {
@@ -106,29 +47,7 @@ jQuery(function () {
         key: function (data) {
           return ko.utils.unwrapObservable(data.id);
         },
-      },
-      nowrunning: {
-        create: function (options) {
-          return new ListJobExec(options.data);
-        },
-        key: function (data) {
-          return (
-            ko.utils.unwrapObservable(data.id) ||
-            ko.utils.unwrapObservable(data.executionId)
-          );
-        },
-      },
-      scheduled: {
-        create: function (options) {
-          return new ListJobExec(options.data);
-        },
-        key: function (data) {
-          return (
-            ko.utils.unwrapObservable(data.id) ||
-            ko.utils.unwrapObservable(data.executionId)
-          );
-        },
-      },
+      }
     };
 
     self.refreshData = function () {
@@ -158,22 +77,16 @@ jQuery(function () {
         method: "GET",
         contentType: "json",
         success: function (data) {
-          // console.log("execs for " + self.id, data);
-          // var executions=data.executions||[];
-          var completed = ko.utils.arrayFilter(data.executions, function (e) {
-            return e.status != "running" && e.status != "scheduled";
-          });
 
           ko.mapping.fromJS(
-            { executions: completed, total: data.paging.total },
+            { executions: data, total: data.paging.total },
             self.mapping,
             self
           );
 
-          if(completed.length > 0){
-            var executions = completed[0];
+          if(data.executions.length > 0){
+            var executions = data.executions[0];
             if(executions){    
-              
               //might need to check your measuring against a completed execution
               var executionDetailUrl = executions.href;
               var currentTotal = self.jobRoiPerUnitTotal()();
@@ -184,10 +97,10 @@ jQuery(function () {
                   contentType: "json",
                   success: function (innerdata) {
                     if ("hours" in innerdata) {
-                      var parsedNumber = parseFloat(parseFloat(innerdata.hours).toFixed(2));
+                      var parsedNumber = parseFloat(innerdata.hours);
                       if (!isNaN(parsedNumber)) {
-                        self.jobRoiPerUnitTotal(parsedNumber);
-                        self.hasRoiData(true);
+                          self.jobRoiPerUnitTotal(parsedNumber);
+                          self.hasRoiData(true);
                       }
                     }
                   },
@@ -202,10 +115,22 @@ jQuery(function () {
     self.refreshTotalRoi = function () {
       var total = ((self.jobRoiPerUnitTotal())*(self.total())).toFixed(2);
       self.jobRoiTotal(total);
+      var formatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+      });
+      var totalCost = total*(self.graphOptions().hourlyCost());
+      var formattedNumber = formatter.format(totalCost.toFixed(2));
+
+      self.roiCalculation(formattedNumber);
     };
 
     self.graphOptions().queryMax.subscribe(function (val) {
       self.refreshData();
+    });
+
+    self.graphOptions().hourlyCost.subscribe(function (val) {
+      self.refreshTotalRoi();
     });
 
     self.jobRoiPerUnitTotal.subscribe(function (val) {
@@ -216,6 +141,7 @@ jQuery(function () {
   function GraphOptions(data) {
     var self = this;
     self.queryMax = ko.observable(data.queryMax || 10);
+    self.hourlyCost = ko.observable(data.hourlyCost || 100);
   }
 
   function JobRoiListView() {
@@ -225,14 +151,12 @@ jQuery(function () {
       return self.jobs();
     });
     self.jobmap = {};
-    self.nowrunning = ko
-      .observableArray([])
-      .extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
     self.executionsShowRecent = ko.observable(true);
 
     self.graphOptions = ko.observable(
       new GraphOptions({
         queryMax: 10,
+        hourlyCost: 100,
       })
     );
     self.graphShowHelpText = ko.observable(false);
@@ -294,7 +218,7 @@ jQuery(function () {
       window.joblistroiview = self;
 
       jQuery(document).trigger(
-        jQuery.Event("loaded.rundeck.plugin.joblist", {
+        jQuery.Event("loaded.rundeck.plugin.jobRoilist", {
           relatedTarget: self,
         })
       );
@@ -328,9 +252,9 @@ jQuery(function () {
         "#indexMain",
         jobListSupport.i18Message(pluginName, "Jobs"),
         "joblistroiview",
-        "joblisttab",
+        "joblistroitab",
         jobListSupport.i18Message(pluginName, "Dashboard"),
-        '<ui-roisummary-table params="joblist: $data"></ui-roisummary-table>',
+        '<ui-roisummary-table params="jobroilist: $data"></ui-roisummary-table>',
         function (elem) {
           // console.log("tab: " + elem, elem);
           ko.applyBindings(self, elem);
