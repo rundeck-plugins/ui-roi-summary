@@ -1230,6 +1230,8 @@ jQuery(function () {
             'Time.Window',
             'Last.Howmany.Days',
             'Show.No.ROI',
+            "Hourly.Value",
+            "Apply",
             'Days'
           ]
           messageKeys.forEach(key => {
