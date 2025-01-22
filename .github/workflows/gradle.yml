@@ -44,9 +44,8 @@ jobs:
       - name: Get Release Version
         id: get_version
         run: |
-          # Redirect version output to a file to avoid printing to stdout
-          ./gradlew currentVersion -q -Prelease.quiet > version.txt
-          VERSION=$(cat version.txt)
+          # Get the last line only which should be the version
+          VERSION=$(./gradlew currentVersion -q -Prelease.quiet | tail -n 1)
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected version: ${VERSION}"
           
