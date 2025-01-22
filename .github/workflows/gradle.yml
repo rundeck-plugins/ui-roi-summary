@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Needed for axion-release plugin
+          fetch-depth: 0
           
       - name: Get Fetch Tags
         run: git fetch --tags --force
@@ -35,30 +35,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
         
-      - name: Debug Build Info
-        run: |
-          echo "Java Home: ${JAVA_HOME}"
-          java -version
-          ./gradlew --version
-          
-      - name: Clean
-        run: ./gradlew clean
-        
-      - name: Compile Assets
-        run: ./gradlew assetCompile --info
-        env:
-          ASSET_PIPELINE_OPTS: "-Dasset.pipeline.minifyJs=false"
-          
       - name: Build Plugin
-        run: ./gradlew build --info
+        run: |
+          ./gradlew clean assetCompile build --info
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
           
       - name: Get Release Version
         id: get_version
         run: |
-          VERSION=$(./gradlew currentVersion -q -Prelease.quiet)
+          # Redirect version output to a file to avoid printing to stdout
+          ./gradlew currentVersion -q -Prelease.quiet > version.txt
+          VERSION=$(cat version.txt)
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Detected version: ${VERSION}"
           
       - name: Show build contents
         run: |
