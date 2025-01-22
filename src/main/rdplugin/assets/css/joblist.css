@@ -224,3 +224,62 @@ small.text-muted {
 .alert-info a:hover {
     color: #2a3c45;            /* Darker on hover */
 }
+
+.roi-summary-cards {
+    margin: 20px 0;
+}
+
+.summary-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card-content {
+    flex-grow: 1;
+}
+
+.metric-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2196F3;
+    margin-bottom: 5px;
+}
+
+.metric-value small {
+    font-size: 14px;
+    color: #6c757d;
+    margin-left: 4px;
+}
+
+.metric-label {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.card-icon {
+    margin-left: 15px;
+    color: rgba(33, 150, 243, 0.3);
+    font-size: 24px;
+}
+
+@media (max-width: 768px) {
+    .summary-card {
+        margin-bottom: 10px;
+    }
+    
+    .metric-value {
+        font-size: 20px;
+    }
+}

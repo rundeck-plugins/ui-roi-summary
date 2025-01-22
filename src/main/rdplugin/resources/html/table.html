@@ -1,10 +1,93 @@
 <div class="roi-dashboard">
-    <div class="dashboard-header clearfix">
-        <h4 class="pull-left" data-bind="text: jobroilist.getMessage('ROI.Summary')"></h4>
-        <a class="btn btn-default btn-sm pull-right" data-toggle="modal" href="#timeWindowModal">
-            <i class="glyphicon glyphicon-cog"></i>
-            <span data-bind="text: jobroilist.getMessage('Configure')"></span>
-        </a>
+    <div class="binding-test" style="display: none;"
+        data-bind="text: 'Binding context working: ' + jobroilist.sortedJobs().length"></div>
+        <div class="dashboard-header clearfix">
+            <h4 class="pull-left" data-bind="text: jobroilist.getMessage ? jobroilist.getMessage('ROI.Summary') : 'ROI Summary'"></h4>
+            <a class="btn btn-default btn-sm pull-right" data-toggle="modal" href="#timeWindowModal">
+                <i class="glyphicon glyphicon-cog"></i>
+                <span data-bind="text: jobroilist.getMessage ? jobroilist.getMessage('Configure') : 'Configure'"></span>
+            </a>
+        </div>
+
+    <div class="roi-summary-cards mb-4" data-bind="visible: true">
+        <div data-bind="visible: jobroilist.loading()" class="text-center p-3">
+            <i class="glyphicon glyphicon-refresh"></i> Loading metrics...
+        </div>
+
+        <div class="row" data-bind="visible: !jobroilist.loading()">
+            <!-- Total Hours Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <span data-bind="text: jobroilist.sortedJobs().reduce(function(sum, job) { 
+                    return sum + parseFloat(job.jobRoiTotal() || 0)
+                }, 0).toFixed(1)"></span>
+                            <small>hrs</small>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Total.Hours')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-time"></i>
+                    </div>
+                </div>
+            </div>
+            <!-- Total Value Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <!-- Updated binding -->
+                            <span data-bind="text: '$' + jobroilist.sortedJobs().reduce(function(sum, job) {
+                                return sum + parseFloat(job.roiCalculation().replace(/[^0-9.-]+/g, '') || 0)
+                            }, 0).toLocaleString('en-US', {maximumFractionDigits: 0})"></span>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Total.Value')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-usd"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jobs with ROI Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <!-- Updated binding -->
+                            <span data-bind="text: jobroilist.sortedJobs().filter(function(job) { 
+                                return job.hasRoiData()
+                            }).length"></span>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Jobs.With.ROI')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-tasks"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average ROI Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <!-- Updated binding -->
+                            <span
+                                data-bind="text: (jobroilist.sortedJobs().reduce(function(sum, job) {
+                                return sum + (job.jobRoiPerUnitTotal() || 0)
+                            }, 0) / jobroilist.sortedJobs().filter(job => job.hasRoiData()).length || 0).toFixed(2)"></span>
+                            <small>hrs/job</small>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Average.Hours.Job')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-stats"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <table class="table table-bordered table-hover table-compact" data-bind="visible: jobroilist.jobs().length > 0">
@@ -90,9 +173,9 @@
                         <label>%%Last.Howmany.Days%%:</label>
                         <div class="input-group">
                             <input type="number" data-bind="value: jobroilist.graphOptions().queryMax"
-                            class="form-control input-sm" min="1" step="1" pattern="\d*"
-                            title="Please enter a positive whole number"
-                            onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
+                                class="form-control input-sm" min="1" step="1" pattern="\d*"
+                                title="Please enter a positive whole number"
+                                onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
                             <span class="input-group-addon">%%Days%%</span>
                         </div>
                     </div>

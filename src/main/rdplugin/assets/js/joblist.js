@@ -3,13 +3,13 @@ function log (...args) {
   if (DEBUG) console.log(...args)
 }
 
-function filterExecutionsByDate(executions, cutoffDate) {
+function filterExecutionsByDate (executions, cutoffDate) {
   // Group executions by date for logging
-  var executionsByDate = {};
-  executions.forEach(function(execution) {
+  var executionsByDate = {}
+  executions.forEach(function (execution) {
     // Get the date from the date-started field
-    var dateStarted = execution['date-started']?.date || execution.dateStarted;
-    
+    var dateStarted = execution['date-started']?.date || execution.dateStarted
+
     // Debug log the raw date value
     // console.log('Processing execution:', {
     //   id: execution.id,
@@ -18,23 +18,25 @@ function filterExecutionsByDate(executions, cutoffDate) {
     // });
 
     if (typeof dateStarted === 'string') {
-      var executionDate = moment(dateStarted).format('YYYY-MM-DD');
+      var executionDate = moment(dateStarted).format('YYYY-MM-DD')
       if (!executionsByDate[executionDate]) {
-        executionsByDate[executionDate] = [];
+        executionsByDate[executionDate] = []
       }
-      executionsByDate[executionDate].push(execution);
+      executionsByDate[executionDate].push(execution)
     }
-  });
+  })
 
   //console.log('Executions grouped by actual dates:', executionsByDate);
 
   // Filter executions
-  var filtered = executions.filter(function(execution) {
-    var dateStarted = execution['date-started']?.date || execution.dateStarted;
-    var executionDate = moment(dateStarted).startOf('day');
-    var cutoffMoment = moment(cutoffDate).startOf('day');
-    var isAfterCutoff = executionDate.isAfter(cutoffMoment) || executionDate.isSame(cutoffMoment, 'day');
-    
+  var filtered = executions.filter(function (execution) {
+    var dateStarted = execution['date-started']?.date || execution.dateStarted
+    var executionDate = moment(dateStarted).startOf('day')
+    var cutoffMoment = moment(cutoffDate).startOf('day')
+    var isAfterCutoff =
+      executionDate.isAfter(cutoffMoment) ||
+      executionDate.isSame(cutoffMoment, 'day')
+
     // console.log('Execution date check:', {
     //   id: execution.id,
     //   executionDate: executionDate.format('YYYY-MM-DD HH:mm:ss'),
@@ -42,11 +44,11 @@ function filterExecutionsByDate(executions, cutoffDate) {
     //   isAfterCutoff: isAfterCutoff,
     //   timeFromCutoff: executionDate.diff(cutoffMoment, 'hours')
     // });
-    
-    return isAfterCutoff;
-  });
 
-  return filtered;
+    return isAfterCutoff
+  })
+
+  return filtered
 }
 
 //= require lib/support
@@ -134,21 +136,107 @@ jQuery(function () {
 
   function JobRoiListView () {
     var self = this
-    self.project = ko.observable(
-      window.projectName || jQuery('#projectSelect').val()
-    )
+    //console.log('Creating JobRoiListView')
+
+    // Add getMessage function
     self.getMessage = function (key) {
       return jobListSupport.i18Message('ui-roisummary', key)
     }
 
+    // Initialize basic observables first
+    self.project = ko.observable(
+      window.projectName || jQuery('#projectSelect').val()
+    )
     self.jobs = ko.observableArray([])
-    self.jobsListed = ko.computed(function () {
-      return self.jobs()
-    })
+    self.loading = ko.observable(false)
     self.jobmap = {}
     self.executionsShowRecent = ko.observable(true)
-    self.loading = ko.observable(false)
     self.graphShowHelpText = ko.observable(false)
+
+    // Add sorting properties
+    self.sortField = ko.observable('name')
+    self.sortDirection = ko.observable('asc')
+
+    // Define sortedJobs computed before using it
+    self.sortedJobs = ko.computed(function () {
+      var jobs = self.jobs().filter(function (job) {
+        return job.hasRoiData() || self.graphOptions().showNoRoi()
+      })
+
+      var field = self.sortField()
+      var direction = self.sortDirection()
+
+      return jobs.sort(function (a, b) {
+        var aValue, bValue
+
+        switch (field) {
+          case 'name':
+            aValue = a.name().toLowerCase()
+            bValue = b.name().toLowerCase()
+            break
+          case 'group':
+            aValue = a.group().toLowerCase()
+            bValue = b.group().toLowerCase()
+            break
+          case 'executions':
+            aValue = a.total() || 0
+            bValue = b.total() || 0
+            break
+          case 'avgHours':
+            aValue = a.jobRoiPerUnitTotal() || 0
+            bValue = b.jobRoiPerUnitTotal() || 0
+            break
+          case 'totalHours':
+            aValue = parseFloat(a.jobRoiTotal()) || 0
+            bValue = parseFloat(b.jobRoiTotal()) || 0
+            break
+          case 'value':
+            aValue =
+              parseFloat(a.roiCalculation().replace(/[^0-9.-]+/g, '')) || 0
+            bValue =
+              parseFloat(b.roiCalculation().replace(/[^0-9.-]+/g, '')) || 0
+            break
+          default:
+            return 0
+        }
+
+        if (direction === 'asc') {
+          return aValue > bValue ? 1 : -1
+        } else {
+          return aValue < bValue ? 1 : -1
+        }
+      })
+    })
+
+    // Now we can define summaryMetrics since sortedJobs is defined
+    self.summaryMetrics = ko.computed(function () {
+      //console.log('Computing summary metrics...')
+      var jobs = self.sortedJobs()
+      //console.log('Jobs available:', jobs.length)
+
+      if (jobs.length === 0) {
+        //console.log('No jobs available yet')
+        return null
+      }
+
+      var metrics = {
+        totalHoursSaved: jobs.reduce(
+          (sum, job) => sum + parseFloat(job.jobRoiTotal() || 0),
+          0
+        ),
+        totalValue: jobs.reduce((sum, job) => {
+          const value =
+            parseFloat(job.roiCalculation().replace(/[^0-9.-]+/g, '')) || 0
+          return sum + value
+        }, 0),
+        jobsWithRoi: jobs.filter(j => j.hasRoiData()).length,
+        avgRoiPerExecution:
+          jobs.reduce((sum, job) => sum + (job.jobRoiPerUnitTotal() || 0), 0) /
+            jobs.filter(j => j.hasRoiData()).length || 0
+      }
+      //console.log('Metrics calculated:', metrics)
+      return metrics
+    })
 
     // Get configured value from plugin config
     const defaultHourlyCost = pluginName.config?.defaultHourlyCost || 100
@@ -169,90 +257,98 @@ jQuery(function () {
       self.refreshExecData()
     })
 
-    self.refreshExecData = function() {
+    self.refreshExecData = function () {
       if (self.loading()) {
-          console.log('Already refreshing, skipping...')
-          return
+        console.log('Already refreshing, skipping...')
+        return
       }
       console.log('Refreshing execution data for all jobs...')
       self.loading(true)
       var jobs = self.jobs()
-  
-      ko.utils.arrayForEach(jobs, function(job) {
+
+      ko.utils.arrayForEach(jobs, function (job) {
         var execsurl = _genUrl(appLinks.scheduledExecutionJobExecutionsAjax, {
           id: job.id,
           max: 1000,
           format: 'json',
           status: 'succeeded',
           recentFilter: 'false',
-          begin: moment().startOf('day').subtract(self.graphOptions().queryMax() - 1, 'days').format('YYYY-MM-DD'),
+          begin: moment()
+            .startOf('day')
+            .subtract(self.graphOptions().queryMax() - 1, 'days')
+            .format('YYYY-MM-DD'),
           end: moment().endOf('day').format('YYYY-MM-DD')
-      });
-  
-          jQuery.ajax({
-              url: execsurl,
-              method: 'GET',
-              contentType: 'json',
-              success: function(data) {
-                  if (data.executions && data.executions.length > 0) {
-                    var cutoffDate = moment().startOf('day').subtract(self.graphOptions().queryMax() - 1, 'days');
-                      
-                      // Use the helper function to filter executions
-                      var filteredExecutions = filterExecutionsByDate(data.executions, cutoffDate)
-  
-                      // console.log('Date filtering:', {
-                      //     cutoffDate: cutoffDate.format('YYYY-MM-DD'),
-                      //     totalExecutions: data.executions.length,
-                      //     filteredCount: filteredExecutions.length,
-                      //     daysRequested: self.graphOptions().queryMax()
-                      // })
-  
-                      // Process filtered executions
-                      var processedExecutions = 0
-                      var executionsWithRoi = []
-  
-                      filteredExecutions.forEach(function(execution) {
-                          jQuery.ajax({
-                              url: execution.href + '/roimetrics/data',
-                              method: 'GET',
-                              contentType: 'json',
-                              success: function(roiData) {
-                                  if ('hours' in roiData) {
-                                      var hours = parseFloat(roiData.hours)
-                                      if (!isNaN(hours)) {
-                                          execution.roiHours = hours
-                                          executionsWithRoi.push(execution)
-                                      }
-                                  }
-                              },
-                              complete: function() {
-                                  processedExecutions++
-                                  if (processedExecutions === filteredExecutions.length) {
-                                      if (executionsWithRoi.length > 0) {
-                                          job.processExecutions(executionsWithRoi)
-                                      } else {
-                                          job.jobRoiPerUnitTotal(0)
-                                          job.hasRoiData(false)
-                                          job.total(0)
-                                      }
-                                      self.loading(false)
-                                  }
-                              }
-                          })
-                      })
-                  } else {
-                      job.hasRoiData(false)
-                      job.total(0)
+        })
+
+        jQuery.ajax({
+          url: execsurl,
+          method: 'GET',
+          contentType: 'json',
+          success: function (data) {
+            if (data.executions && data.executions.length > 0) {
+              var cutoffDate = moment()
+                .startOf('day')
+                .subtract(self.graphOptions().queryMax() - 1, 'days')
+
+              // Use the helper function to filter executions
+              var filteredExecutions = filterExecutionsByDate(
+                data.executions,
+                cutoffDate
+              )
+
+              // console.log('Date filtering:', {
+              //     cutoffDate: cutoffDate.format('YYYY-MM-DD'),
+              //     totalExecutions: data.executions.length,
+              //     filteredCount: filteredExecutions.length,
+              //     daysRequested: self.graphOptions().queryMax()
+              // })
+
+              // Process filtered executions
+              var processedExecutions = 0
+              var executionsWithRoi = []
+
+              filteredExecutions.forEach(function (execution) {
+                jQuery.ajax({
+                  url: execution.href + '/roimetrics/data',
+                  method: 'GET',
+                  contentType: 'json',
+                  success: function (roiData) {
+                    if ('hours' in roiData) {
+                      var hours = parseFloat(roiData.hours)
+                      if (!isNaN(hours)) {
+                        execution.roiHours = hours
+                        executionsWithRoi.push(execution)
+                      }
+                    }
+                  },
+                  complete: function () {
+                    processedExecutions++
+                    if (processedExecutions === filteredExecutions.length) {
+                      if (executionsWithRoi.length > 0) {
+                        job.processExecutions(executionsWithRoi)
+                      } else {
+                        job.jobRoiPerUnitTotal(0)
+                        job.hasRoiData(false)
+                        job.total(0)
+                      }
                       self.loading(false)
+                    }
                   }
-              },
-              error: function(xhr, status, error) {
-                  console.error('Error loading executions:', error)
-                  self.loading(false)
-              }
-          })
+                })
+              })
+            } else {
+              job.hasRoiData(false)
+              job.total(0)
+              self.loading(false)
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('Error loading executions:', error)
+            self.loading(false)
+          }
+        })
       })
-  }
+    }
 
     //load job list
     self.loadJobs = function () {
@@ -387,6 +483,11 @@ jQuery(function () {
             templateHtml,
             function (elem) {
               ko.applyBindings({ jobroilist: self }, elem)
+              // console.log('ROI Summary Bindings:', {
+              //   cardsPresent: jQuery('.roi-summary-cards').length,
+              //   debugPresent: jQuery('.debug-info').length,
+              //   sortedJobsCount: joblistroiview.sortedJobs().length
+              // })
             }
           )
 
@@ -533,105 +634,113 @@ jQuery(function () {
 
     self.refreshData = function () {
       self.loading(true)
-      var cutoffDate = moment().startOf('day').subtract(self.graphOptions().queryMax() - 1, 'days');
-  
-          var execsurl = _genUrl(appLinks.scheduledExecutionJobExecutionsAjax, {
-            id: self.id,
-            max: 1000,
-            format: 'json',
-            status: 'succeeded',
-            recentFilter: 'false',
-            begin: moment().startOf('day').subtract(self.graphOptions().queryMax() - 1, 'days').format('YYYY-MM-DD'),
-            end: moment().endOf('day').format('YYYY-MM-DD')
-        });
-  
+      var cutoffDate = moment()
+        .startOf('day')
+        .subtract(self.graphOptions().queryMax() - 1, 'days')
+
+      var execsurl = _genUrl(appLinks.scheduledExecutionJobExecutionsAjax, {
+        id: self.id,
+        max: 1000,
+        format: 'json',
+        status: 'succeeded',
+        recentFilter: 'false',
+        begin: moment()
+          .startOf('day')
+          .subtract(self.graphOptions().queryMax() - 1, 'days')
+          .format('YYYY-MM-DD'),
+        end: moment().endOf('day').format('YYYY-MM-DD')
+      })
+
       jQuery.ajax({
-          url: execsurl,
-          method: 'GET',
-          contentType: 'json',
-          success: function (data) {
-              if (data.executions && data.executions.length > 0) {
-                  // Group executions by date first
-                  var executionsByDate = {}
-                  data.executions.forEach(function (execution) {
-                      var dateStarted = execution.dateStarted
-                      if (typeof dateStarted === 'object' && dateStarted.date) {
-                          dateStarted = dateStarted.date
-                      }
-                      var executionDate = moment(dateStarted).format('YYYY-MM-DD')
-                      if (!executionsByDate[executionDate]) {
-                          executionsByDate[executionDate] = []
-                      }
-                      executionsByDate[executionDate].push(execution)
-                  })
-  
-                  // console.log('Executions by date:', executionsByDate)
-  
-                  // Filter executions by date
-                  var filteredExecutions = filterExecutionsByDate(data.executions, cutoffDate)
-  
-                  // console.log('Date filtering:', {
-                  //     cutoffDate: cutoffDate.format('YYYY-MM-DD'),
-                  //     totalExecutions: data.executions.length,
-                  //     filteredCount: filteredExecutions.length,
-                  //     daysRequested: self.graphOptions().queryMax()
-                  // })
-  
-                  if (filteredExecutions.length === 0) {
+        url: execsurl,
+        method: 'GET',
+        contentType: 'json',
+        success: function (data) {
+          if (data.executions && data.executions.length > 0) {
+            // Group executions by date first
+            var executionsByDate = {}
+            data.executions.forEach(function (execution) {
+              var dateStarted = execution.dateStarted
+              if (typeof dateStarted === 'object' && dateStarted.date) {
+                dateStarted = dateStarted.date
+              }
+              var executionDate = moment(dateStarted).format('YYYY-MM-DD')
+              if (!executionsByDate[executionDate]) {
+                executionsByDate[executionDate] = []
+              }
+              executionsByDate[executionDate].push(execution)
+            })
+
+            // console.log('Executions by date:', executionsByDate)
+
+            // Filter executions by date
+            var filteredExecutions = filterExecutionsByDate(
+              data.executions,
+              cutoffDate
+            )
+
+            // console.log('Date filtering:', {
+            //     cutoffDate: cutoffDate.format('YYYY-MM-DD'),
+            //     totalExecutions: data.executions.length,
+            //     filteredCount: filteredExecutions.length,
+            //     daysRequested: self.graphOptions().queryMax()
+            // })
+
+            if (filteredExecutions.length === 0) {
+              self.jobRoiPerUnitTotal(0)
+              self.hasRoiData(false)
+              self.total(0)
+              self.roiDescription('No executions in selected date range')
+              self.refreshTotalRoi()
+              self.loading(false)
+              return
+            }
+
+            // Now get ROI data for filtered executions
+            var processedExecutions = 0
+            var executionsWithRoi = []
+
+            filteredExecutions.forEach(function (execution) {
+              jQuery.ajax({
+                url: execution.href + '/roimetrics/data',
+                method: 'GET',
+                contentType: 'json',
+                success: function (roiData) {
+                  if ('hours' in roiData) {
+                    var hours = parseFloat(roiData.hours)
+                    if (!isNaN(hours)) {
+                      execution.roiHours = hours
+                      executionsWithRoi.push(execution)
+                    }
+                  }
+                },
+                complete: function () {
+                  processedExecutions++
+                  if (processedExecutions === filteredExecutions.length) {
+                    if (executionsWithRoi.length > 0) {
+                      self.processExecutions(executionsWithRoi)
+                    } else {
                       self.jobRoiPerUnitTotal(0)
                       self.hasRoiData(false)
                       self.total(0)
-                      self.roiDescription('No executions in selected date range')
-                      self.refreshTotalRoi()
-                      self.loading(false)
-                      return
+                    }
+                    self.loading(false)
                   }
-  
-                  // Now get ROI data for filtered executions
-                  var processedExecutions = 0
-                  var executionsWithRoi = []
-  
-                  filteredExecutions.forEach(function (execution) {
-                      jQuery.ajax({
-                          url: execution.href + '/roimetrics/data',
-                          method: 'GET',
-                          contentType: 'json',
-                          success: function (roiData) {
-                              if ('hours' in roiData) {
-                                  var hours = parseFloat(roiData.hours)
-                                  if (!isNaN(hours)) {
-                                      execution.roiHours = hours
-                                      executionsWithRoi.push(execution)
-                                  }
-                              }
-                          },
-                          complete: function () {
-                              processedExecutions++
-                              if (processedExecutions === filteredExecutions.length) {
-                                  if (executionsWithRoi.length > 0) {
-                                      self.processExecutions(executionsWithRoi)
-                                  } else {
-                                      self.jobRoiPerUnitTotal(0)
-                                      self.hasRoiData(false)
-                                      self.total(0)
-                                  }
-                                  self.loading(false)
-                              }
-                          }
-                      })
-                  })
-              } else {
-                  self.jobRoiPerUnitTotal(0)
-                  self.hasRoiData(false)
-                  self.total(0)
-                  self.loading(false)
-              }
-          },
-          error: function () {
-              self.loading(false)
+                }
+              })
+            })
+          } else {
+            self.jobRoiPerUnitTotal(0)
+            self.hasRoiData(false)
+            self.total(0)
+            self.loading(false)
           }
+        },
+        error: function () {
+          self.loading(false)
+        }
       })
-  }
+    }
 
     self.refreshTotalRoi = function () {
       var totalHours = (self.jobRoiPerUnitTotal() * self.total()).toFixed(2)
@@ -986,80 +1095,93 @@ jQuery(function () {
       self.loading(true)
       var jobDetail = loadJsonData('jobDetail')
       var jobId = jobDetail.id
-  
+
       if (jobDetail.plugins && jobDetail.plugins['roi-metrics']) {
-          self.hasRoiConfiguration(true)
+        self.hasRoiConfiguration(true)
       } else {
-          self.hasRoiConfiguration(false)
+        self.hasRoiConfiguration(false)
       }
-  
+
       var execsurl = _genUrl(appLinks.scheduledExecutionJobExecutionsAjax, {
-          id: jobId,
-          max: 1000, // Use large number instead of queryMax
-          format: 'json',
-          status: 'succeeded',
-          recentFilter: 'false',
-          begin: moment().startOf('day').subtract(self.graphOptions().queryMax() - 1, 'days').format('YYYY-MM-DD'),
-          end: moment().endOf('day').format('YYYY-MM-DD')
+        id: jobId,
+        max: 1000, // Use large number instead of queryMax
+        format: 'json',
+        status: 'succeeded',
+        recentFilter: 'false',
+        begin: moment()
+          .startOf('day')
+          .subtract(self.graphOptions().queryMax() - 1, 'days')
+          .format('YYYY-MM-DD'),
+        end: moment().endOf('day').format('YYYY-MM-DD')
       })
-  
+
       jQuery.ajax({
-          url: execsurl,
-          method: 'GET',
-          contentType: 'json',
-          success: function (data) {
-              if (data.executions && data.executions.length > 0) {
-                  var cutoffDate = moment().startOf('day').subtract(self.graphOptions().queryMax() - 1, 'days');
-                  var filteredExecutions = filterExecutionsByDate(data.executions, cutoffDate);
-  
-                  self.total(filteredExecutions.length)
-  
-                  var processedExecutions = 0
-                  var executionsWithRoi = []
-  
-                  filteredExecutions.forEach(function (execution) {
-                      jQuery.ajax({
-                          url: execution.href + '/roimetrics/data',
-                          method: 'GET',
-                          contentType: 'json',
-                          success: function (innerdata) {
-                              if ('hours' in innerdata) {
-                                  var hours = parseFloat(innerdata.hours)
-                                  if (!isNaN(hours)) {
-                                      execution.roiHours = hours
-                                      executionsWithRoi.push(execution)
-                                  }
-                              }
-                          },
-                          error: function (xhr, status, error) {
-                              if (xhr.status === 404) {
-                                  console.warn(`ROI data not found for execution ${execution.id}. Could be a failed Execution. This is normal.`)
-                              } else {
-                                  console.error(`Error fetching ROI data for execution ${execution.id}:`, error)
-                              }
-                          },
-                          complete: function () {
-                              processedExecutions++
-                              if (processedExecutions === filteredExecutions.length) {
-                                  if (executionsWithRoi.length > 0) {
-                                      self.processExecutions(executionsWithRoi)
-                                      self.updateChart(executionsWithRoi)
-                                  }
-                                  self.loading(false)
-                              }
-                          }
-                      })
-                  })
-              } else {
-                  self.loading(false)
-              }
-          },
-          error: function (xhr, status, error) {
-              console.error('Error loading executions:', error)
-              self.loading(false)
+        url: execsurl,
+        method: 'GET',
+        contentType: 'json',
+        success: function (data) {
+          if (data.executions && data.executions.length > 0) {
+            var cutoffDate = moment()
+              .startOf('day')
+              .subtract(self.graphOptions().queryMax() - 1, 'days')
+            var filteredExecutions = filterExecutionsByDate(
+              data.executions,
+              cutoffDate
+            )
+
+            self.total(filteredExecutions.length)
+
+            var processedExecutions = 0
+            var executionsWithRoi = []
+
+            filteredExecutions.forEach(function (execution) {
+              jQuery.ajax({
+                url: execution.href + '/roimetrics/data',
+                method: 'GET',
+                contentType: 'json',
+                success: function (innerdata) {
+                  if ('hours' in innerdata) {
+                    var hours = parseFloat(innerdata.hours)
+                    if (!isNaN(hours)) {
+                      execution.roiHours = hours
+                      executionsWithRoi.push(execution)
+                    }
+                  }
+                },
+                error: function (xhr, status, error) {
+                  if (xhr.status === 404) {
+                    console.warn(
+                      `ROI data not found for execution ${execution.id}. Could be a failed Execution. This is normal.`
+                    )
+                  } else {
+                    console.error(
+                      `Error fetching ROI data for execution ${execution.id}:`,
+                      error
+                    )
+                  }
+                },
+                complete: function () {
+                  processedExecutions++
+                  if (processedExecutions === filteredExecutions.length) {
+                    if (executionsWithRoi.length > 0) {
+                      self.processExecutions(executionsWithRoi)
+                      self.updateChart(executionsWithRoi)
+                    }
+                    self.loading(false)
+                  }
+                }
+              })
+            })
+          } else {
+            self.loading(false)
           }
+        },
+        error: function (xhr, status, error) {
+          console.error('Error loading executions:', error)
+          self.loading(false)
+        }
       })
-  }
+    }
 
     self.calculateRoi = function () {
       var totalHours = self.jobRoiPerUnitTotal() * self.total()
@@ -1090,68 +1212,53 @@ jQuery(function () {
   //console.log('Checking page conditions...')
 
   if (pagePath === 'menu/jobs') {
-    //console.log('Matched jobs list page');
     _ticker(moment())
-
-    // Initialize plugin
     let pluginId = 'ui-roisummary'
     let pluginUrl = rundeckPage.pluginBaseUrl(pluginId)
-
-    //console.log('Plugin setup:', {
-    //     id: pluginId,
-    //     url: pluginUrl
-    // });
-
-    // Initialize jobListSupport
-    jobListSupport.setup_ko_loader(pluginId, pluginUrl, pluginId)
-
     let joblistroiview = new JobRoiListView()
 
-    // Initialize plugin and wait for messages
     jobListSupport.init_plugin(pluginId, function () {
-      // Load template after messages are loaded
-      jQuery.get(pluginUrl + '/html/table.html', function (templateHtml) {
-        //console.log('Table template loaded');
 
-        // Process message replacements
-        let processedHtml = templateHtml
-        ;[
-          'Time.Window',
-          'Last.Howmany.Days',
-          'Days',
-          'Hourly.Value',
-          'Time.Span',
-          'Apply',
-          'Configure',
-          'Show.No.ROI'
-        ].forEach(key => {
-          let message = jobListSupport.i18Message(pluginId, key)
-          //console.log('Processing modal message:', {
-          //     key,
-          //     message: message,
-          //     fromProperties: true
-          // });
-          processedHtml = processedHtml.replace(
-            new RegExp(`%%${key}%%`, 'g'),
-            message.replace('ui-roisummary.', '')
+
+      jQuery
+        .get(pluginUrl + '/html/table.html', function (templateHtml) {
+          // Process template
+          let processedHtml = templateHtml
+          const messageKeys = [
+            'ROI.Summary',
+            'Configure',
+            'Time.Window',
+            'Last.Howmany.Days',
+            'Show.No.ROI',
+            'Days'
+          ]
+          messageKeys.forEach(key => {
+            const message = jobListSupport.i18Message('ui-roisummary', key)
+            const placeholder = new RegExp('%%' + key + '%%', 'g')
+            processedHtml = processedHtml.replace(placeholder, message)
+          })
+          // Create tab with processed template
+          let tablink = jobListSupport.initPage(
+            '#indexMain',
+            jobListSupport.i18Message(pluginId, 'Jobs'),
+            'joblistroiview',
+            'joblistroitab',
+            jobListSupport.i18Message(pluginId, 'Dashboard'),
+            processedHtml,
+            function (elem) {
+              joblistroiview.loadJobs()
+              ko.applyBindings({ jobroilist: joblistroiview }, elem)
+              joblistroiview.refreshExecData()
+            }
           )
         })
-
-        // Create tab with processed template
-        let tablink = jobListSupport.initPage(
-          '#indexMain',
-          jobListSupport.i18Message(pluginId, 'Jobs'),
-          'joblistroiview',
-          'joblistroitab',
-          jobListSupport.i18Message(pluginId, 'Dashboard'),
-          processedHtml,
-          function (elem) {
-            joblistroiview.loadJobs()
-            ko.applyBindings({ jobroilist: joblistroiview }, elem)
-            joblistroiview.refreshExecData()
-          }
-        )
-      })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          // Add error logging
+          console.error('Template load failed:', {
+            status: textStatus,
+            error: errorThrown
+          })
+        })
     })
   }
 
@@ -1191,8 +1298,6 @@ jQuery(function () {
 
       // Load template after messages are loaded
       jQuery.get(pluginUrl + '/html/job-roi.html', function (templateHtml) {
-        console.log('Template loaded')
-
         try {
           // Process message replacements
           let processedHtml = templateHtml
