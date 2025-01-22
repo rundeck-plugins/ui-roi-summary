@@ -1,6 +1,12 @@
 name: Java CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - main      # only run on main branch
+  pull_request:
+    branches:
+      - main      # optionally, also run on PRs targeting main
 
 jobs:
   build:
@@ -44,7 +50,6 @@ jobs:
       - name: Get Release Version
         id: get_version
         run: |
-          # Get the last line only which should be the version
           VERSION=$(./gradlew currentVersion -q -Prelease.quiet | tail -n 1)
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected version: ${VERSION}"
