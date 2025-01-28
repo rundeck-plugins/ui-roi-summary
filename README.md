@@ -9,6 +9,14 @@ Originally created by Eric Chapman and enhanced by the Rundeck Plugins Team, the
   <img src="docs/roi-job.png" alt="ROI Job Details">
 </p>
 
+## Versions
+
+Current Stable Version: Coming soon!
+
+| Plugin Version | Rundeck Version | Release Date |
+|---------------|-----------------|--------------|
+| 0.1.0         | 4.8.0+         | 2024-01-20   |
+
 
 ## Key Features
 
@@ -51,10 +59,10 @@ Using gradle:
 
 ## Install
 
-You can install this plugin with the Rundeck Repository feature or copy to your libext folder.  (No need to restart Rundeck)
+You can install this plugin with the Rundeck Repository feature or copy to your `libext` folder.  (No need to restart Rundeck)
 
 ```
-cp build/libs/ui-roi-summary-${version}.zip $RDECK_BASE/libext
+cp build/distributions/ui-roi-summary-0.1.0.zip $RDECK_BASE/libext
 ```
 
 ## Support
