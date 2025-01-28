@@ -1,38 +1,32 @@
-/*
- * Copyright 2016 SimplifyOps, Inc. (http://simplifyops.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 buildscript {
     repositories {
         mavenCentral()
+        maven { url "https://repo.grails.org/grails/core" }
+    }
+    dependencies {
+        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:3.4.0'
+        classpath 'com.bertramlabs.plugins:sass-asset-pipeline:3.4.0'
     }
 }
 
 plugins {
     id 'pl.allegro.tech.build.axion-release' version '1.7.0'
-    id 'com.bertramlabs.asset-pipeline' version '2.11.6'
     id 'java'
 }
+
+apply plugin: 'com.bertramlabs.asset-pipeline'
+
+repositories {
+    mavenCentral()
+    maven { url "https://repo.grails.org/grails/core" }
+}
+
 sourceCompatibility = 1.11
 targetCompatibility = 1.11
 
 println "Java Home: ${System.getProperty('java.home')}"
 println "Java Version: ${System.getProperty('java.version')}"
 println "Gradle Version: ${gradle.gradleVersion}"
-
-
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
@@ -44,14 +38,12 @@ ext.buildDateString = new Date().format("yyyy-MM-dd'T'HH:mm:ssX")
 ext.archivesBaseName = "ui-roisummary"
 ext.pluginBaseFolder = "."
 
-
 scmVersion {
     ignoreUncommittedChanges = true
     tag {
         prefix = ''
         versionSeparator = ''
         def origDeserialize=deserialize
-        //apend .0 to satisfy semver if the tag version is only X.Y
         deserialize = { config, position, tagName ->
             def orig = origDeserialize(config, position, tagName)
             if (orig.split('\\.').length < 3) {
@@ -71,33 +63,35 @@ assets {
     minifyCss = false
     enableSourceMaps = false
     enableGzip = false
-    configOptions = [:]
+    
+    configOptions = [
+        sass: [
+            resolveRelativeAssets: true,
+            compressed: true,
+            debugInfo: false,
+            lineNumbers: false
+        ]
+    ]
 
     minifyOptions = [
-            languageMode     : 'ES5',
-            targetLanguage   : 'ES5', //Can go from ES6 to ES5 for those bleeding edgers
-            optimizationLevel: 'SIMPLE',
-            angularPass      : false // Can use @ngInject annotation for Angular Apps
+        languageMode: 'ES5',
+        targetLanguage: 'ES5',
+        optimizationLevel: 'SIMPLE',
+        angularPass: false
     ]
 
-//    includes = [/*'css*//*.css', */'js/*.js']
+    includes = ['scss/*.scss', 'js/*.js']
     excludes = [
-            '**/*.less',
-            '**/*.html',
-            'js/lib/*.js',
-            'js/lib/**/*.js'
+        '**/*.less',
+        '**/*.html',
+        'js/lib/*.js',
+        'js/lib/**/*.js'
     ]
 
-    //for plugin packaging
-    packagePlugin = false //set to true if this is a library
-
-    //developmentRuntime can be turned off
+    packagePlugin = false
     developmentRuntime = true
-
-    //if you want to customize the jar task this task runs on you can specify a jarTaskName
     jarTaskName = null
 
-    // Can add custom asset locations (directories or individual jar files)
     from "${project.projectDir}/src/main/rdplugin/assets"
     compileDir = "${project.buildDir}/assets/resources"
 }
@@ -126,7 +120,6 @@ task pluginZip(type: Jar) {
     }
 }
 
-
 build.dependsOn 'pluginZip'
 
 pluginZip.doFirst {
@@ -135,16 +128,15 @@ pluginZip.doFirst {
     def assetsManifest = file("${assetsDir}/manifest.properties")
     assetsManifest.withInputStream(assetsMap.&load)
     def tokens = assetsMap + [
-            version    : project.version,
-            date       : new Date().toString(),
-            author     : sopsCopyright,
-            url        : sopsUrl,
-            title      : pluginName,
-            description: pluginDescription,
-            name       : archivesBaseName.toString(),
+        version: project.version,
+        date: new Date().toString(),
+        author: sopsCopyright,
+        url: sopsUrl,
+        title: pluginName,
+        description: pluginDescription,
+        name: archivesBaseName.toString(),
     ]
     copy {
-        //load asset mapping
         from(assetsDir) {
             into 'resources'
         }
@@ -156,8 +148,12 @@ pluginZip.doFirst {
     }
 }
 
-project.pluginZip.dependsOn 'assetCompile'
-project.pluginZip.mustRunAfter 'assetCompile'
+project.pluginZip.dependsOn assetCompile
+project.pluginZip.mustRunAfter assetCompile
+
+dependencies {
+    implementation 'com.bertramlabs.plugins:sass-asset-pipeline:3.4.0'
+}
 
 artifacts {
     add('default', pluginZip)

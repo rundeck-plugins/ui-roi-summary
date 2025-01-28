@@ -24,4 +24,4 @@ providers:
             - js/init.js
             - js/joblist.js
           styles:
-            - css/joblist.css
+            - scss/styles.css
