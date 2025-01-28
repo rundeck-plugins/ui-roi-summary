@@ -15,8 +15,9 @@ Current Stable Version: Coming soon!
 
 | Plugin Version | Rundeck Version | Release Date |
 |---------------|-----------------|--------------|
-| 0.1.0         | 4.8.0+         | 2024-01-20   |
+| 0.1.1         | 4.8.0+         | 2024-01-20   |
 
+**Known Issues** : 0.1.1 and prior do not work with the Alpha UI release (aka NextUI). 
 
 ## Key Features
 
