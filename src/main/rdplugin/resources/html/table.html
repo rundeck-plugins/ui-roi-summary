@@ -22,7 +22,7 @@
                         <div class="metric-value">
                             <span data-bind="text: jobroilist.sortedJobs().filter(function(job) {
                                 return job.hasRoiData()
-                            }).reduce(function(sum, job) { 
+                            }).reduce(function(sum, job) {
                                 return sum + parseFloat(job.jobRoiTotal() || 0)
                             }, 0).toFixed(1)"></span>
                             <small>hrs</small>
@@ -58,7 +58,7 @@
                     <div class="card-content">
                         <div class="metric-value">
                             <!-- Updated binding -->
-                            <span data-bind="text: jobroilist.sortedJobs().filter(function(job) { 
+                            <span data-bind="text: jobroilist.sortedJobs().filter(function(job) {
                                 return job.hasRoiData()
                             }).length"></span>
                         </div>
