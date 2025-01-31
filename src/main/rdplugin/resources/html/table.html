@@ -1,91 +1,202 @@
-<div>
-    <div class="">
-        <a style="margin-bottom:1em;" class="btn btn-default btn-xs pull-right" data-toggle="modal"
-            href="#joblistRoiViewOptions">
-            %%Time Span%%
-            <i class="glyphicon glyphicon-cog"></i>
-        </a>
+<div class="roi-dashboard">
+    <div class="binding-test" style="display: none;"
+        data-bind="text: 'Binding context working: ' + jobroilist.sortedJobs().length"></div>
+        <div class="dashboard-header clearfix">
+            <h4 class="pull-left" data-bind="text: jobroilist.getMessage ? jobroilist.getMessage('ROI.Summary') : 'ROI Summary'"></h4>
+            <a class="btn btn-default btn-sm pull-right" data-toggle="modal" href="#timeWindowModal">
+                <i class="glyphicon glyphicon-cog"></i>
+                <span data-bind="text: jobroilist.getMessage ? jobroilist.getMessage('Configure') : 'Configure'"></span>
+            </a>
+        </div>
 
-        <div class="modal fade" id="joblistRoiViewOptions" role="dialog" aria-labelledby="joblistRoiViewOptionsModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title" id="joblistRoiViewOptionsModalLabel">%%Time Window%%</h4>
-                    </div>
+    <div class="roi-summary-cards mb-4" data-bind="visible: true">
+        <div data-bind="visible: jobroilist.loading()" class="text-center p-3">
+            <i class="glyphicon glyphicon-refresh"></i> Loading metrics...
+        </div>
 
-                    <div class="modal-body container form form-horizontal">
-                        <div class="form-group">
-                            <label class="control-label col-sm-2">%%Last Howmany Days%%: </label>
-                            <div class="col-sm-10 form-inline">
-                                <label>
-                                    <input type="number" data-bind="value: jobroilist.graphOptions().queryMax"
-                                        class="form-control" />
-                                    %%Days%%
-                                </label>
-                            </div>
+        <div class="row" data-bind="visible: !jobroilist.loading()">
+            <!-- Total Hours Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <span data-bind="text: jobroilist.sortedJobs().filter(function(job) {
+                                return job.hasRoiData()
+                            }).reduce(function(sum, job) {
+                                return sum + parseFloat(job.jobRoiTotal() || 0)
+                            }, 0).toFixed(1)"></span>
+                            <small>hrs</small>
                         </div>
-                        <div class="form-group">
-                            <label class="control-label col-sm-2">%%Hourly Value%%: </label>
-                            <div class="col-sm-10 form-inline">
-                                <label>
-                                    <input type="number" data-bind="value: jobroilist.graphOptions().hourlyCost"
-                                        class="form-control" />
-                                </label>
-                            </div>
-                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Total.Hours')"></div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">%%Apply%%</button>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-time"></i>
+                    </div>
+                </div>
+            </div>
+            <!-- Total Value Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <!-- Updated binding -->
+                            <span data-bind="text: '$' + jobroilist.sortedJobs().reduce(function(sum, job) {
+                                return sum + parseFloat(job.roiCalculation().replace(/[^0-9.-]+/g, '') || 0)
+                            }, 0).toLocaleString('en-US', {maximumFractionDigits: 0})"></span>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Total.Value')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-usd"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jobs with ROI Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <!-- Updated binding -->
+                            <span data-bind="text: jobroilist.sortedJobs().filter(function(job) {
+                                return job.hasRoiData()
+                            }).length"></span>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Jobs.With.ROI')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-tasks"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average ROI Card -->
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="card-content">
+                        <div class="metric-value">
+                            <!-- Updated binding -->
+                            <span
+                                data-bind="text: (jobroilist.sortedJobs().reduce(function(sum, job) {
+                                return sum + (job.jobRoiPerUnitTotal() || 0)
+                            }, 0) / jobroilist.sortedJobs().filter(job => job.hasRoiData()).length || 0).toFixed(2)"></span>
+                            <small>hrs/job</small>
+                        </div>
+                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Average.Hours.Job')"></div>
+                    </div>
+                    <div class="card-icon">
+                        <i class="glyphicon glyphicon-stats"></i>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
-    <span><i>No ROI data found might signify that there are no metrics set against the job, or the job has not run in the selected period.</i></span>
-    <table class="table table-bordered table-hover table-compact">
-        <tbody>
+
+    <table class="table table-bordered table-hover table-compact" data-bind="visible: jobroilist.jobs().length > 0">
+        <thead>
             <tr>
-                <th class=" text-center h5 text-header">%%Name%%</th>
-                <th class=" text-center h5 text-header">%%Group%%</th>
-                <th class=" text-center h5 text-header">%%Executions%%</th>
-                <th class=" text-center h5 text-header">%%Hours Saved%%</th>
+                <th class="sortable" data-bind="click: function() { jobroilist.sort('name') }">
+                    <span data-bind="text: jobroilist.getMessage('Name')"></span>
+                    <i class="sort-icon" data-bind="css: jobroilist.getSortIcon('name')"></i>
+                </th>
+                <th class="sortable" data-bind="click: function() { jobroilist.sort('group') }">
+                    <span data-bind="text: jobroilist.getMessage('Group')"></span>
+                    <i class="sort-icon" data-bind="css: jobroilist.getSortIcon('group')"></i>
+                </th>
+                <th class="sortable" data-bind="click: function() { jobroilist.sort('executions') }">
+                    <span data-bind="text: jobroilist.getMessage('Executions')"></span>
+                    <i class="sort-icon" data-bind="css: jobroilist.getSortIcon('executions')"></i>
+                </th>
+                <th class="sortable" data-bind="click: function() { jobroilist.sort('avgHours') }">
+                    <span data-bind="text: jobroilist.getMessage('Average.Hours.Run')"></span>
+                    <i class="sort-icon" data-bind="css: jobroilist.getSortIcon('avgHours')"></i>
+                </th>
+                <th class="sortable" data-bind="click: function() { jobroilist.sort('totalHours') }">
+                    <span data-bind="text: jobroilist.getMessage('Total.Hours')"></span>
+                    <i class="sort-icon" data-bind="css: jobroilist.getSortIcon('totalHours')"></i>
+                </th>
+                <th class="sortable" data-bind="click: function() { jobroilist.sort('value') }">
+                    <span data-bind="text: jobroilist.getMessage('ROI.Value')"></span>
+                    <i class="sort-icon" data-bind="css: jobroilist.getSortIcon('value')"></i>
+                </th>
             </tr>
-        </tbody>
-        <tbody data-bind="foreach: jobroilist.jobsListed">
+        </thead>
+        <tbody data-bind="foreach: jobroilist.sortedJobs()">
             <tr>
                 <td>
-                    <span data-bind="if: href()">
-                        <a href="#"
-                            data-bind="text: name, attr: {href: href, title: name}"></a>
-                    </span>
-                    <span data-bind="if: !href()">
-                        <span
-                            data-bind="text: name"></span>
-                    </span>
+                    <a class="text-info"
+                        data-bind="text: name, 
+                        attr: { href: '/project/' + window.location.pathname.split('/project/')[1].split('/')[0] + '/job/show/' + id }">
+                    </a>
                 </td>
-                <td data-bind="text: group"></td>
                 <td>
-                    <!-- ko if: $data.total() > 0 -->
-                    <span class="text-info" data-bind="text: $data.total"></span> Execution(s)
-                    <!-- /ko -->
+                    <span class="text-muted" data-bind="text: group"></span>
+                </td>
+                <td>
+                    <span class="badge badge-info" data-bind="text: total"></span>
+                    <small class="text-muted">executions</small>
+                </td>
+                <td data-bind="if: hasRoiData()">
+                    <span class="text-info" data-bind="text: jobRoiPerUnitTotal().toFixed(2)"></span>
+                    <small class="text-muted">hrs</small>
+                </td>
+                <td data-bind="if: hasRoiData()">
+                    <span class="text-info" data-bind="text: jobRoiTotal"></span>
+                    <small class="text-muted" data-bind="text: roiDescription"></small>
                 </td>
                 <td>
                     <span data-bind="if: hasRoiData()">
-                        <span class="text-info" data-bind="text: $data.total"></span>
-                        executions, saving <span class="text-info" data-bind="text: jobRoiPerUnitTotal"></span> per run = 
-                        <i>
-                            <span class="text-info" data-bind="text: jobRoiTotal"></span>
-                            <span class="text-info" data-bind="text: roiDescription"></span>
-                        </i> - <span class="text-info" data-bind="text: roiCalculation"></span>
+                        <span class="badge badge-success" data-bind="text: roiCalculation"></span>
                     </span>
                     <span data-bind="if: !hasRoiData()">
-                        No ROI data found
+                        <span class="text-muted"><i>No ROI data</i></span>
                     </span>
                 </td>
             </tr>
         </tbody>
     </table>
+
+    <!-- No data message -->
+    <div class="alert alert-info" data-bind="visible: jobroilist.jobs().length === 0">
+        <i class="glyphicon glyphicon-info-sign"></i> No ROI data found
+    </div>
+
+    <div class="modal fade" id="timeWindowModal" tabindex="-1" role="dialog" aria-labelledby="timeWindowModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="timeWindowModalLabel">%%Time.Window%%</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>%%Last.Howmany.Days%%:</label>
+                        <div class="input-group">
+                            <input type="number" data-bind="value: jobroilist.graphOptions().queryMax"
+                                class="form-control input-sm" min="1" step="1" pattern="\d*"
+                                title="Please enter a positive whole number"
+                                onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
+                            <span class="input-group-addon">%%Days%%</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>%%Hourly.Value%%:</label>
+                        <input type="number" class="form-control"
+                            data-bind="value: jobroilist.graphOptions().hourlyCost" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" data-bind="checked: jobroilist.graphOptions().showNoRoi">
+                            %%Show.No.ROI%%
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">%%Apply%%</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

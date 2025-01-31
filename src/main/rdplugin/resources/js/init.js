@@ -1,6 +1,12 @@
+//= require lib/support
+
 jQuery(function () {
   if (typeof RDPLUGIN != "object") {
     window.RDPLUGIN = {};
   }
-  RDPLUGIN["ui-roisummary"] = "@name@";
+  
+  // Initialize plugin
+  RDPLUGIN["ui-roisummary"] = {
+    name: "ui-roisummary"
+  };
 });
