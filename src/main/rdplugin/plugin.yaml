@@ -1,7 +1,7 @@
 name: ui-roisummary
 rundeckPluginVersion: 1.2
 author: Eric Chapman | Rundeck Team
-url: https://github.com/echapmanFromBunnings/ui-roi-summary
+url: https://github.com/rundeck-plugins/ui-roi-summary
 date: 2024-01-20T19:50:16.097Z
 version: 1.0.0
 providers:
@@ -10,13 +10,6 @@ providers:
       plugin-type: ui
       title: "ROI Summary"
       description: "ROI Summary Views on Job List and Job Activities pages."
-      properties:
-        - name: defaultHourlyCost
-          title: 'Default Hourly Cost'
-          type: Integer
-          required: false
-          default: '100'
-          description: 'Default hourly cost rate in dollars'
       ui:
         - pages: '*'
           scripts:
