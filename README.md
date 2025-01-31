@@ -5,17 +5,20 @@
 The ROI Summary plugin brings your automation's financial impact to life through intuitive visualizations and real-time calculations, helping teams quantify and demonstrate the value of their automation initiatives.
 
 ![ROI Summary Dashboard](docs/roi-summary.png)
-*ROI Summary Dashboard showing financial impact and trends*
+*ROI Summary Dashboard showing financial overview for project*
+
+![ROI Job Details](docs/roi-job.png)
+*Job specific ROI showing financial impact and trends*
 
 ## Versions
 
-Current Stable Version: 0.1.1
+Current Stable Version: 1.0.0
 
 | Plugin Version | Rundeck Version | Release Date |
 |----|----|----|
-| 0.1.1    | 4.8.0+    | 2024-01-20   |
+| 1.0.0    | 5.0.2+    | 2025-01-31   |
 
-**Known Issues**: 0.1.1 and prior do not work with the Alpha UI release (aka NextUI)
+**Known Issues**: 1.0.0 and prior do not work with the Alpha UI release (aka NextUI)
 
 ## Key Features
 
