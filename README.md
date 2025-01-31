@@ -2,69 +2,103 @@
 
 **Transform your automation metrics into compelling business value**
 
-Originally created by Eric Chapman and enhanced by the Rundeck Plugins Team, the ROI Summary plugin brings your automation's financial impact to life through intuitive visualizations and real-time calculations.
+The ROI Summary plugin brings your automation's financial impact to life through intuitive visualizations and real-time calculations, helping teams quantify and demonstrate the value of their automation initiatives.
 
-<p align="center">
-  <img src="docs/roi-summary.png" alt="ROI Summary screen shot">
-  <img src="docs/roi-job.png" alt="ROI Job Details">
-</p>
+![ROI Summary Dashboard](docs/roi-summary.png)
+*ROI Summary Dashboard showing financial impact and trends*
 
 ## Versions
 
-Current Stable Version: Coming soon!
+Current Stable Version: 0.1.1
 
 | Plugin Version | Rundeck Version | Release Date |
-|---------------|-----------------|--------------|
-| 0.1.1         | 4.8.0+         | 2024-01-20   |
+|----|----|----|
+| 0.1.1    | 4.8.0+    | 2024-01-20   |
 
-**Known Issues** : 0.1.1 and prior do not work with the Alpha UI release (aka NextUI). 
+**Known Issues**: 0.1.1 and prior do not work with the Alpha UI release (aka NextUI)
 
 ## Key Features
 
-- **Dynamic ROI Dashboard**: Instantly see the hours and costs saved across all your automated jobs
-- **Interactive Trend Analysis**: Beautiful charts showing your automation savings over time
-- **Flexible Cost Modeling**: Easily adjust hourly rates to match your business context
-- **Real-time Calculations**: Watch your ROI grow with each successful execution
-- **Executive-ready Metrics**: Perfect for demonstrating automation value to stakeholders
+- **Dynamic ROI Dashboard**: Real-time view of cost and time savings across all automated jobs
+- **Interactive Trend Analysis**: Visual tracking of automation savings over time
+- **Flexible Cost Modeling**: Customizable hourly rates to match your business context
+- **Real-time Calculations**: Immediate ROI updates with each successful execution
+- **Executive-ready Metrics**: Designed for clear stakeholder communication
 
 ## Visualizations
-- **Jobs List View**: See ROI metrics for all jobs at a glance, with options to show/hide jobs without ROI data
-- **Individual Job View**: Detailed ROI trends and metrics for specific jobs
-- **Configurable Time Windows**: Analyze ROI data over custom time periods
-- **Interactive Charts**: Hover over data points to see detailed metrics
+
+- **ROI Summary Dashboard**: Overview of total savings and key metrics including:
+  - **Total Hours Saved**: Cumulative time savings across all automated jobs
+  - **Cost Savings**: Financial impact calculated based on configured hourly rates
+  - **Execution Count**: Total number of successful automated runs
+  - **Trend Analysis**: Historical view of savings growth over time
+
+- **Jobs List View**: Comprehensive metrics for all jobs including:
+  - **Individual Job ROI**: Per-job breakdown of time and cost savings
+  - **Execution History**: Track record of automation success
+  - **Configurable Display**: Options to show/hide jobs without ROI data
+
+- **Individual Job View**: Detailed analysis showing:
+  - **Job-specific Trends**: ROI patterns over time
+  - **Execution Details**: Granular view of each run's contribution
+  - **Custom Time Windows**: Flexible date range selection
 
 ## Business Benefits
 
-- Quantify the true value of your automation initiatives
-- Make data-driven decisions about automation investments
-- Demonstrate clear ROI to leadership
-- Track automation efficiency trends over time
-- Identify your highest-impact automation workflows
+- Quantify automation initiatives in financial terms
+- Support data-driven automation investment decisions
+- Provide clear ROI metrics for stakeholder reporting
+- Track efficiency improvements over time
+- Identify high-impact automation opportunities
 
 ## Requirements
 
-This plugin requires Runbook Automation Self-Hosted as it leverages the ROI Metrics feature available in commercial versions.  (It is not available on our Cloud offering yet) 
+- Rundeck Enterprise (Self-Hosted)
+- ROI Metrics feature enabled and configured
+- Job-level metric configuration:
+  - Metric name: `hours`
+  - Value: estimated time saved per execution
+- [Detailed ROI Metrics setup guide](https://docs.rundeck.com/docs/learning/howto/use-roi-metrics.html)
 
-The ROI Metrics feature must be configured for your jobs to capture time savings data that this plugin visualizes.  On each job you'd like to track ROI add a metric called `hours` and assign the value for it.  [More details about how to use ROI Metrics is here](https://docs.rundeck.com/docs/learning/howto/use-roi-metrics.html).
+## Configuration
 
----
+The plugin supports configuration through:
+- Job-level ROI metric settings
+- Dashboard time window adjustments
+- Hourly rate customization
 
-*Note: This plugin seamlessly integrates with Rundeck's UI to provide insights where you need them - both in job listings and individual job details pages. Configure once, gain insights everywhere.*
+Default settings:
+- Time Window: 30 days
+- Metric Name: hours
+
+## Usage
+
+1. Configure ROI metrics on your automated jobs
+2. Navigate to the ROI Summary dashboard
+3. View overall savings metrics
+4. Analyze trends through interactive charts
+5. Drill down to individual job details
+6. Adjust time windows for different perspectives
 
 ## Build
 
 Using gradle:
-```
+```bash
 ./gradlew clean build
 ```
 
 ## Install
 
-You can install this plugin with the Rundeck Repository feature or copy to your `libext` folder.  (No need to restart Rundeck)
-
 ```
 cp build/distributions/ui-roi-summary-0.1.0.zip $RDECK_BASE/libext
 ```
+
+No restart required after installation.
+
+## Known Issues/Limitations
+- Not compatible with Alpha UI/NextUI
+- Requires Enterprise Self-Hosted (not available on Cloud)
+- ROI calculations depend on accurate time savings estimates
 
 ## Support
 - Documentation: [ROI Metrics Guide](https://docs.rundeck.com/docs/learning/howto/use-roi-metrics.html)
