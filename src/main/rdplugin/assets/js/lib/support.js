@@ -49,8 +49,6 @@ ${tabA}${tabB}
       main.addClass('tab-pane ' + activeOld)
       tabs.insertBefore(main.parent())
     } else {
-      //update page to add tab
-      //find tabs
       let tabs = main.parent().parent().find('.nav.nav-tabs')
       if (tabs.length < 1) {
         let link = jQuery(`[href="${firsttab}"][data-toggle=tab]`)
