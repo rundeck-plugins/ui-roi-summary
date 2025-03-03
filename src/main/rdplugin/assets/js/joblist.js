@@ -58,7 +58,7 @@ jQuery(function () {
   var project = rundeckPage.project()
   var pagePath = rundeckPage.path()
   //console.log('Current page path:', pagePath)
-  var pluginName = RDPLUGIN['ui-roisummary']
+  var pluginName = RDPRO['ui-roisummary']
   var pluginBase = rundeckPage.pluginBaseUrl(pluginName)
   var _ticker = ko.observable()
 
