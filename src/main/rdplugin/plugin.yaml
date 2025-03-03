@@ -1,4 +1,4 @@
-name: ui-roisummary
+name: "ui-roisummary"
 rundeckPluginVersion: 1.2
 author: Eric Chapman | Rundeck Team
 url: https://github.com/rundeck-plugins/ui-roi-summary
@@ -11,10 +11,11 @@ providers:
       title: "ROI Summary"
       description: "ROI Summary Views on Job List and Job Activities pages."
       ui:
-        - pages: '*'
+        - pages: ['menu/jobs','scheduledExecution/show']
           scripts:
-            - js/chart.min.js
-            - js/init.js
-            - js/joblist.js
+            - "js/chart.min.js"
+            - "js/init.js"
+            - "js/joblist.js"
           styles:
-            - css/styles.css
+            - "css/styles.css"
+          requires: ['rundeckpro-ui-common-platform']
