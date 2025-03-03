@@ -1,12 +1,12 @@
 //= require lib/support
 
 jQuery(function () {
-  if (typeof RDPLUGIN != "object") {
-    window.RDPLUGIN = {};
+  if (typeof(RDPRO) != 'object') {
+    window.RDPRO = {};
   }
   
   // Initialize plugin
-  RDPLUGIN["ui-roisummary"] = {
+  RDPRO["ui-roisummary"] = {
     name: "ui-roisummary"
   };
 });
