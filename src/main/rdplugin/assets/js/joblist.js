@@ -1037,6 +1037,22 @@ jQuery(function () {
                     }
                   }
                 },
+                'y-count': {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
+                  title: {
+                    display: true,
+                    text: 'Executions'
+                  },
+                  grid: {
+                    drawOnChartArea: false
+                  },
+                  ticks: {
+                    beginAtZero: true,
+                    stepSize: 1
+                  }
+                },
                 'y-value': {
                   type: 'linear',
                   display: true,
@@ -1218,8 +1234,6 @@ jQuery(function () {
     let joblistroiview = new JobRoiListView()
 
     jobListSupport.init_plugin(pluginId, function () {
-
-
       jQuery
         .get(pluginUrl + '/html/table.html', function (templateHtml) {
           // Process template
@@ -1230,8 +1244,8 @@ jQuery(function () {
             'Time.Window',
             'Last.Howmany.Days',
             'Show.No.ROI',
-            "Hourly.Value",
-            "Apply",
+            'Hourly.Value',
+            'Apply',
             'Days'
           ]
           messageKeys.forEach(key => {
