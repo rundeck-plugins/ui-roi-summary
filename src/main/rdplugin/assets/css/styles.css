@@ -55,8 +55,20 @@
     flex-wrap: wrap;
 }
 
+.roi-summary-section {
+    margin-top: var(--spacing-xl);
+}
+
+.roi-summary-section .panel-title {
+    margin-bottom: var(--spacing-lg) ;
+}
+
 .roi-summary-job .form-group {
     width: 20%;
+}
+
+.roi-card-icon {
+    color: var(--text-secondary-color);
 }
 
 /* Table Styles */
