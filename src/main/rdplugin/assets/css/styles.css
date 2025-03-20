@@ -55,6 +55,10 @@
     flex-wrap: wrap;
 }
 
+.roi-summary-job .form-group {
+    width: 20%;
+}
+
 /* Table Styles */
 .roi-dashboard .table {
     margin-top: var(--spacing-lg);
