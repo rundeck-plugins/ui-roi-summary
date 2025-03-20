@@ -33,6 +33,21 @@
     max-height: 300px;
 }
 
+.roi-charts-container {
+    margin-top: var(--spacing-lg);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.roi-chart-wrapper {
+    width: 100%;
+    background: var(--card-default-background-color);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-default-box-shadow);
+}
+
 /* Graph Notes */
 .graph-notes {
     background: var(--background-color-lvl2);
