@@ -8,6 +8,4 @@ jQuery(function () {
   RDPRO["ui-roisummary"] = {
       name: "ui-roisummary"
   };
-
-  console.log ("Intializing ROI Metrics");
 });
