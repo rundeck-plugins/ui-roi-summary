@@ -11,7 +11,7 @@ providers:
       title: "ROI Summary"
       description: "ROI Summary Views on Job List and Job Activities pages."
       ui:
-        - pages: '*'
+        - pages: ['menu/jobs', 'scheduledExecution/show']
           scripts:
             - js/chart.min.js
             - js/init.js
