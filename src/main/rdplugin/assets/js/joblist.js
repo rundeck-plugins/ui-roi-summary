@@ -1,4 +1,5 @@
 var DEBUG = false
+//= require ./lib/support
 function log (...args) {
   if (DEBUG) console.log(...args)
 }
@@ -69,7 +70,6 @@ function initRoiSummary() {
 
   if(currentUi) {
     console.log("Initializing ROI Metrics");
-    //= require lib/support
     var jobListSupport = new JobListSupport()
 
     jQuery(function () {
