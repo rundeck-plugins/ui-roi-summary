@@ -51,12 +51,24 @@ function filterExecutionsByDate (executions, cutoffDate) {
   return filtered
 }
 
+function getChartThemeColors () {
+  const isDarkMode =
+    document.documentElement.getAttribute('data-color-theme') === 'dark'
+  return {
+    textColor: isDarkMode ? '#ffffff' : '#666666',
+    gridColor: isDarkMode ? 'rgba(160, 160, 160, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    borderColor: isDarkMode ? 'rgba(160, 160, 160, 0.2)' : 'rgba(0, 0, 0, 0.2)'
+  }
+}
+
 //= require lib/support
 var jobListSupport = new JobListSupport()
 
 jQuery(function () {
   var project = rundeckPage.project()
   var pagePath = rundeckPage.path()
+  var joblistroiview
+  var jobRoiView
   //console.log('Current page path:', pagePath)
   var pluginName = RDPRO['ui-roisummary']
   var pluginBase = rundeckPage.pluginBaseUrl(pluginName)
@@ -849,6 +861,8 @@ jQuery(function () {
       console.log('Updating chart')
       self.loading(true)
 
+      const themeColors = getChartThemeColors()
+
       // Group executions by date
       let dailyData = {}
       let cutoffDate = moment().subtract(self.graphOptions().queryMax(), 'days')
@@ -981,7 +995,8 @@ jQuery(function () {
                   position: 'top',
                   labels: {
                     usePointStyle: true,
-                    padding: 20
+                    padding: 20,
+                    color: themeColors.textColor
                   }
                 },
                 tooltip: {
@@ -997,13 +1012,18 @@ jQuery(function () {
                           `Executions: ${dayData.count}`,
                           `Average: ${(dayData.hours / dayData.count).toFixed(
                             2
-                          )} hrs/execution`
+                          )} hrs/execution`,
+                          `Value: $${(
+                            dayData.hours * self.graphOptions().hourlyCost()
+                          ).toFixed(2)}`
                         ]
-                      } else {
+                      } else if (context.dataset.yAxisID === 'y-value') {
                         return [
-                          `Value: ${context.raw.toFixed(2)}`,
+                          `Value: $${context.raw.toFixed(2)}`,
                           `Executions: ${dayData.count}`
                         ]
+                      } else {
+                        return [`Executions: ${dayData.count}`]
                       }
                     }
                   }
@@ -1013,10 +1033,15 @@ jQuery(function () {
                 x: {
                   title: {
                     display: true,
-                    text: self.getMessage('Execution.Date')
+                    text: self.getMessage('Execution.Date'),
+                    color: themeColors.textColor
                   },
                   grid: {
-                    display: false
+                    color: themeColors.gridColor,
+                    borderColor: themeColors.borderColor
+                  },
+                  ticks: {
+                    color: themeColors.textColor
                   }
                 },
                 'y-hours': {
@@ -1025,13 +1050,15 @@ jQuery(function () {
                   position: 'left',
                   title: {
                     display: true,
-                    text: self.getMessage('Hours.Saved')
+                    text: self.getMessage('Hours.Saved'),
+                    color: themeColors.textColor
                   },
                   grid: {
-                    color: 'rgba(54, 162, 235, 0.1)'
+                    color: themeColors.gridColor,
+                    borderColor: themeColors.borderColor
                   },
                   ticks: {
-                    beginAtZero: true,
+                    color: themeColors.textColor,
                     callback: function (value) {
                       return value + ' hrs'
                     }
@@ -1043,12 +1070,16 @@ jQuery(function () {
                   position: 'left',
                   title: {
                     display: true,
-                    text: 'Executions'
+                    text: 'Executions',
+                    color: themeColors.textColor
                   },
                   grid: {
-                    drawOnChartArea: false
+                    drawOnChartArea: false,
+                    color: themeColors.gridColor,
+                    borderColor: themeColors.borderColor
                   },
                   ticks: {
+                    color: themeColors.textColor,
                     beginAtZero: true,
                     stepSize: 1
                   }
@@ -1059,13 +1090,16 @@ jQuery(function () {
                   position: 'right',
                   title: {
                     display: true,
-                    text: self.getMessage('Hourly.Value')
+                    text: self.getMessage('Hourly.Value'),
+                    color: themeColors.textColor
                   },
                   grid: {
                     drawOnChartArea: false,
-                    color: 'rgba(75, 192, 192, 0.1)'
+                    color: themeColors.gridColor,
+                    borderColor: themeColors.borderColor
                   },
                   ticks: {
+                    color: themeColors.textColor,
                     beginAtZero: true,
                     callback: function (value) {
                       return '$' + value
@@ -1231,7 +1265,7 @@ jQuery(function () {
     _ticker(moment())
     let pluginId = 'ui-roisummary'
     let pluginUrl = rundeckPage.pluginBaseUrl(pluginId)
-    let joblistroiview = new JobRoiListView()
+    joblistroiview = new JobRoiListView()
 
     jobListSupport.init_plugin(pluginId, function () {
       jQuery
@@ -1295,7 +1329,7 @@ jQuery(function () {
     // Initialize jobListSupport with string values
     jobListSupport.setup_ko_loader(pluginId, pluginUrl, pluginId)
 
-    let jobRoiView = new JobRoiViewModel()
+    jobRoiView = new JobRoiViewModel()
 
     // Create container
     let container = jQuery('<div class="col-sm-12 roi-summary-section"></div>')
@@ -1356,6 +1390,29 @@ jQuery(function () {
       })
     })
   }
+
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      if (mutation.attributeName === 'data-color-theme') {
+        if (pagePath === 'menu/jobs' && joblistroiview?.refreshExecData) {
+          joblistroiview.refreshExecData()
+        } else if (
+          pagePath === 'scheduledExecution/show' &&
+          jobRoiView?.loadRoiData
+        ) {
+          jobRoiView.loadRoiData()
+        }
+      }
+    })
+  })
+
+  if (joblistroiview || jobRoiView) {
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-color-theme']
+    })
+  }
+
   //console.log('Plugin and Support info:', {
   //   pluginName: pluginName,
   //   pluginBase: pluginBase,

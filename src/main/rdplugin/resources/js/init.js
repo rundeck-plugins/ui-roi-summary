@@ -1,12 +1,13 @@
 //= require lib/support
 
 jQuery(function () {
-  if (typeof(RDPRO) != 'object') {
-    window.RDPRO = {};
+  if (typeof RDPRO != "object") {
+      window.RDPRO = {};
   }
   
-  // Initialize plugin
   RDPRO["ui-roisummary"] = {
-    name: "ui-roisummary"
+      name: "ui-roisummary"
   };
+
+  console.log ("Intializing ROI Metrics");
 });

@@ -1,78 +1,58 @@
-/* styles.css from ROI Summary*/
 @import 'variables.css';
 
 /* Layout Components */
 .joblistroi-executions {
     display: flex;
-    display: -webkit-flex;
 }
 
 /* Dashboard Components */
 .roi-dashboard {
-    color: var(--text-primary);
+    background: var(--background-color-lvl2);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
-    box-shadow: var(--shadow-sm);
+    margin: var(--spacing-lg);
 }
 
 .dashboard-header {
     margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-md);
-    border-bottom: 0.0625rem solid var(--gray-400);
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* Chart Components */
 .roi-trend-chart {
-    margin-top: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background-color: white;
+    background: var(--card-default-background-color);
     border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    box-shadow: var(--card-default-box-shadow);
+    margin-top: var(--spacing-lg);
 }
 
+.roi-trend-chart canvas {
+    max-height: 300px;
+}
+
+.roi-charts-container {
+    margin-top: var(--spacing-lg);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.roi-chart-wrapper {
+    width: 100%;
+    background: var(--card-default-background-color);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-default-box-shadow);
+}
+
+/* Graph Notes */
 .graph-notes {
-    background-color: var(--gray-100);
+    background: var(--background-color-lvl2);
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
-    margin-top: var(--spacing-lg);
-    font-size: 0.9rem;
-}
-
-.graph-notes h5 {
-    color: var(--gray-700);
-    margin-bottom: var(--spacing-md);
-}
-
-.graph-notes ul li {
-    margin-bottom: var(--spacing-sm);
-}
-
-.graph-notes i {
-    margin-right: var(--spacing-xs);
-    color: var(--info);
-}
-
-/* Navigation and Links */
-.job-link {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-/* Labels and Stats */
-.group-label {
-    color: var(--gray-600);
-    font-size: 0.9rem;
-}
-
-.execution-stats {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.stat-label {
-    color: var(--gray-600);
-    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
 }
 
 /* ROI Data Components */
@@ -89,200 +69,96 @@
     flex-wrap: wrap;
 }
 
-.metric {
-    color: var(--gray-800);
+.roi-summary-section {
+    margin-top: var(--spacing-xl);
 }
 
-.metric strong {
-    color: var(--primary);
+.roi-summary-section .panel-title {
+    margin-bottom: var(--spacing-lg) ;
 }
 
-.separator {
-    color: var(--gray-300);
+.roi-summary-job .form-group {
+    width: 20%;
 }
 
-.total-value {
-    color: var(--success);
-}
-
-.roi-value {
-    margin-top: var(--spacing-xs);
-}
-
-.no-roi {
-    color: var(--gray-600);
-}
-
-/* Empty States */
-.empty-state {
-    text-align: center;
-    padding: var(--spacing-xxl);
-    color: var(--gray-600);
-}
-
-.empty-state i {
-    margin-right: var(--spacing-sm);
+.roi-card-icon {
+    color: var(--text-secondary-color);
 }
 
 /* Table Styles */
-.table {
+.roi-dashboard .table {
     margin-top: var(--spacing-lg);
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.table th {
-    border-bottom: 0.125rem solid var(--gray-200);
-    font-weight: 600;
-}
-
-/* Badges */
-.badge-primary,
-.badge-success,
-.badge-info {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.9rem;
-}
-
-.badge-primary {
-    background-color: var(--primary);
-}
-
-.badge-success {
-    background-color: var(--success);
-}
-
-.badge-info {
-    background-color: var(--info);
-    margin-right: var(--spacing-xs);
-}
-
-/* Text Utilities */
-.text-info {
-    color: var(--info);
+.roi-dashboard .table th {
+    background: var(--background-color-lvl2);
+    padding: var(--spacing-md);
     font-weight: 500;
+    font-size: var(--text-md);
+    color: var(--font-color);
+    border-bottom: 1px solid var(--border-color);
 }
 
-small.text-muted {
-    font-size: 0.85rem;
-    color: var(--gray-500);
+.roi-dashboard .table td {
+    padding: var(--spacing-md);
+    color: var(--font-color);
 }
 
-/* Alerts */
-.alert {
-    margin-top: var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-}
-
-.alert-info {
-    background-color: var(--alert-info-bg);
-    border-color: var(--alert-info-border);
-    color: var(--alert-info-text);
-}
-
-.alert-info h4 {
-    color: var(--alert-info-text);
-    margin-bottom: var(--spacing-lg);
-}
-
-.alert-info .glyphicon {
-    color: var(--alert-info-text);
-}
-
-.alert-info code {
-    background-color: rgba(255,255,255,0.7);
-    color: var(--alert-info-text);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--spacing-xs);
-}
-
-.alert-info a {
-    color: var(--alert-info-link);
-    text-decoration: underline;
-}
-
-.alert-info a:hover {
-    color: var(--alert-info-link-hover);
-}
-
-/* Sorting Components */
-.sortable {
+/* Sortable Headers */
+.roi-dashboard .table th.sortable {
     cursor: pointer;
     position: relative;
     padding-right: var(--spacing-lg);
 }
 
-.sort-icon {
+.roi-dashboard .table th.sortable:hover {
+    background: var(--background-color-lvl3);
+}
+
+.roi-dashboard .sort-icon {
     position: absolute;
     right: var(--spacing-xs);
     top: 50%;
     transform: translateY(-50%);
 }
 
-.sort-icon.glyphicon-sort {
-    opacity: 0.3;
-}
-
-.sort-icon.glyphicon-sort-by-attributes,
-.sort-icon.glyphicon-sort-by-attributes-alt {
-    opacity: 1;
-    color: var(--primary);
-}
-
 /* Card Components */
 .roi-summary-cards {
     margin: var(--spacing-lg) 0;
 }
-
-.summary-card {
+.roi-card {
+    background: var(--card-default-background-color);
     border-radius: var(--border-radius);
-    border-color: var(--border-color);
-    color: var(--text-primary);
     padding: var(--spacing-lg);
-    border: 0.0625rem solid var(--gray-200);
     margin-bottom: var(--spacing-lg);
     display: flex;
     justify-content: space-between;
     align-items: center;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: var(--card-default-box-shadow);
 }
 
-.summary-card:hover {
-    transform: translateY(-0.125rem);
-    box-shadow: var(--shadow-hover);
+.roi-card:hover {
+    transform: translateY(-2px);
 }
 
-.card-content {
+.roi-card-content {
     flex-grow: 1;
 }
 
-.metric-value {
-    font-size: var(--font-size-xl);
+.roi-metric-value {
+    font-size: var(--text-lg);
     font-weight: 600;
-    color: var(--primary);
-    margin-bottom: var(--spacing-xs);
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-1);
 }
 
-.metric-value small {
-    font-size: var(--font-size-sm);
-    color: var(--gray-500);
-    margin-left: var(--spacing-xs);
-}
-
-.metric-label {
-    color: var(--text-secondary);
-    font-size: var(--font-size-lg);
-}
-
-.card-icon {
-    margin-left: var(--spacing-lg);
-    color: var(--primary-light);
-    font-size: var(--font-size-xl);
-}
-
-/* Utilities */
-.mb-3 {
-    margin-bottom: var(--spacing-base);
+.roi-metric-label {
+    color: var(--text-secondary-color);
+    font-size: var(--text-md);
 }
 
 /* Media Queries */
@@ -290,8 +166,8 @@ small.text-muted {
     .summary-card {
         margin-bottom: var(--spacing-md);
     }
-
+    
     .metric-value {
-        font-size: var(--font-size-lg);
+        font-size: var(--text-md);
     }
 }

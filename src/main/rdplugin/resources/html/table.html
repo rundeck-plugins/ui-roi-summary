@@ -17,9 +17,9 @@
         <div class="row" data-bind="visible: !jobroilist.loading()">
             <!-- Total Hours Card -->
             <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="card-content">
-                        <div class="metric-value">
+                <div class="roi-card">
+                    <div class="roi-card-content">
+                        <div class="roi-metric-value">
                             <span data-bind="text: jobroilist.sortedJobs().filter(function(job) {
                                 return job.hasRoiData()
                             }).reduce(function(sum, job) {
@@ -27,26 +27,26 @@
                             }, 0).toFixed(1)"></span>
                             <small>hrs</small>
                         </div>
-                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Total.Hours')"></div>
+                        <div class="roi-metric-label" data-bind="text: jobroilist.getMessage('Total.Hours')"></div>
                     </div>
-                    <div class="card-icon">
+                    <div class="roi-card-icon">
                         <i class="glyphicon glyphicon-time"></i>
                     </div>
                 </div>
             </div>
             <!-- Total Value Card -->
             <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="card-content">
-                        <div class="metric-value">
+                <div class="roi-card">
+                    <div class="roi-card-content">
+                        <div class="roi-metric-value">
                             <!-- Updated binding -->
                             <span data-bind="text: '$' + jobroilist.sortedJobs().reduce(function(sum, job) {
                                 return sum + parseFloat(job.roiCalculation().replace(/[^0-9.-]+/g, '') || 0)
                             }, 0).toLocaleString('en-US', {maximumFractionDigits: 0})"></span>
                         </div>
-                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Total.Value')"></div>
+                        <div class="roi-metric-label" data-bind="text: jobroilist.getMessage('Total.Value')"></div>
                     </div>
-                    <div class="card-icon">
+                    <div class="roi-card-icon">
                         <i class="glyphicon glyphicon-usd"></i>
                     </div>
                 </div>
@@ -54,17 +54,17 @@
 
             <!-- Jobs with ROI Card -->
             <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="card-content">
-                        <div class="metric-value">
+                <div class="roi-card">
+                    <div class="roi-card-content">
+                        <div class="roi-metric-value">
                             <!-- Updated binding -->
                             <span data-bind="text: jobroilist.sortedJobs().filter(function(job) {
                                 return job.hasRoiData()
                             }).length"></span>
                         </div>
-                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Jobs.With.ROI')"></div>
+                        <div class="roi-metric-label" data-bind="text: jobroilist.getMessage('Jobs.With.ROI')"></div>
                     </div>
-                    <div class="card-icon">
+                    <div class="roi-card-icon">
                         <i class="glyphicon glyphicon-tasks"></i>
                     </div>
                 </div>
@@ -72,9 +72,9 @@
 
             <!-- Average ROI Card -->
             <div class="col-md-3">
-                <div class="summary-card">
-                    <div class="card-content">
-                        <div class="metric-value">
+                <div class="roi-card">
+                    <div class="roi-card-content">
+                        <div class="roi-metric-value">
                             <!-- Updated binding -->
                             <span
                                 data-bind="text: (jobroilist.sortedJobs().reduce(function(sum, job) {
@@ -82,9 +82,9 @@
                             }, 0) / jobroilist.sortedJobs().filter(job => job.hasRoiData()).length || 0).toFixed(2)"></span>
                             <small>hrs/job</small>
                         </div>
-                        <div class="metric-label" data-bind="text: jobroilist.getMessage('Average.Hours.Job')"></div>
+                        <div class="roi-metric-label" data-bind="text: jobroilist.getMessage('Average.Hours.Job')"></div>
                     </div>
-                    <div class="card-icon">
+                    <div class="roi-card-icon">
                         <i class="glyphicon glyphicon-stats"></i>
                     </div>
                 </div>

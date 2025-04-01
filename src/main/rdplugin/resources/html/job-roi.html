@@ -1,124 +1,126 @@
 <div class="roi-summary-job">
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title">%%ROI.Summary%%</h3>
+    <h3 class="panel-title">%%ROI.Summary%%</h3>
+    <div class="form-group">
+        <label>%%Hourly.Cost%%</label>
+        <input type="number" data-bind="value: graphOptions().hourlyCost" class="form-control input-sm"
+            aria-label="Hourly cost rate" min="0" step="0.01" />
+    </div>
+    <div class="form-group">
+        <label>%%Last.Howmany.Days%%</label>
+        <div class="input-group">
+            <input type="number" data-bind="value: graphOptions().queryMax" class="form-control input-sm" min="1"
+                step="1" pattern="\d*" title="Please enter a positive whole number"
+                onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
+            <span class="input-group-addon">%%Days%%</span>
         </div>
-        <div class="panel-body">
-            <!-- Input controls -->
+    </div>
+
+    <!-- Loading indicator -->
+    <div data-bind="visible: loading" class="text-center">
+        <i class="glyphicon glyphicon-refresh spin"></i> Loading ROI data...
+    </div>
+
+    <!-- No ROI Data message -->
+    <div data-bind="visible: !loading() && !hasRoiData()" class="alert alert-info"
+        style="display: flex; align-items: start;">
+        <div style="flex: 1;">
+            <h4 class="alert-heading">
+                <i class="glyphicon glyphicon-info-sign"></i> No ROI Data Available
+            </h4>
+            <p><b>We didn't find any Data for this time range. Increase the "Last How Many Days" value to find
+                    executions with ROI data.</b></p>
+
+            <p>It's possible this job doesn't have any ROI metrics configured yet. To start tracking ROI:</p>
+            <ol>
+                <li>Go to the job editor's <strong>Execution Plugins</strong> tab</li>
+                <li>Enable the <strong>ROI Metrics Data</strong> plugin</li>
+                <li>Click <strong>Add Custom Field</strong> and create a field with:
+                    <ul style="list-style-type: none; padding-left: 20px; margin-top: 10px;">
+                        <li>• Field Label: "Hours Saved" (or similar)</li>
+                        <li>• Field Key: <code>hours</code></li>
+                        <li>• Description: Brief explanation of what this metric tracks</li>
+                    </ul>
+                </li>
+                <li>Enter a value for the hours saved per execution</li>
+                <li>Save the job and run it to start collecting ROI data</li>
+            </ol>
+            <p>Once configured, this page will show ROI metrics and trends for your job executions.
+                <a href="https://docs.rundeck.com/docs/manual/jobs/roi-metrics.html" target="_blank">Learn more
+                    about ROI Metrics
+                    <i class="glyphicon glyphicon-new-window"></i>
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <!-- ROI Data section -->
+    <div data-bind="visible: !loading() && hasRoiData()">
+        <div class="roi-summary-cards">
             <div class="row">
-                <div class="col-sm-6">
-                    <div class="form-group">
-                        <label>%%Hourly.Cost%%</label>
-                        <input type="number" data-bind="value: graphOptions().hourlyCost" class="form-control input-sm"
-                            aria-label="Hourly cost rate" min="0" step="0.01" />
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="form-group">
-                        <label>%%Last.Howmany.Days%%</label>
-                        <div class="input-group">
-                            <input type="number" data-bind="value: graphOptions().queryMax"
-                            class="form-control input-sm" min="1" step="1" pattern="\d*"
-                            title="Please enter a positive whole number"
-                            onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
-                            <span class="input-group-addon">%%Days%%</span>
+                <!-- Total Executions Card -->
+                <div class="col-md-3">
+                    <div class="roi-card">
+                        <div class="roi-card-content">
+                            <div class="roi-metric-value" data-bind="text: total"></div>
+                            <div class="roi-metric-label">Total Executions</div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Loading indicator -->
-            <div data-bind="visible: loading" class="text-center">
-                <i class="glyphicon glyphicon-refresh spin"></i> Loading ROI data...
-            </div>
-
-            <!-- No ROI Data message -->
-            <div data-bind="visible: !loading() && !hasRoiData()" class="alert alert-info"
-                style="display: flex; align-items: start;">
-                <div style="flex: 1;">
-                    <h4 class="alert-heading">
-                        <i class="glyphicon glyphicon-info-sign"></i> No ROI Data Available
-                    </h4>
-                    <p><b>We didn't find any Data for this time range.  Increase the "Last How Many Days" value to find executions with ROI data.</b></p>
-                        
-                    <p>It's possible this job doesn't have any ROI metrics configured yet. To start tracking ROI:</p>
-                    <ol>
-                        <li>Go to the job editor's <strong>Execution Plugins</strong> tab</li>
-                        <li>Enable the <strong>ROI Metrics Data</strong> plugin</li>
-                        <li>Click <strong>Add Custom Field</strong> and create a field with:
-                            <ul style="list-style-type: none; padding-left: 20px; margin-top: 10px;">
-                                <li>• Field Label: "Hours Saved" (or similar)</li>
-                                <li>• Field Key: <code>hours</code></li>
-                                <li>• Description: Brief explanation of what this metric tracks</li>
-                            </ul>
-                        </li>
-                        <li>Enter a value for the hours saved per execution</li>
-                        <li>Save the job and run it to start collecting ROI data</li>
-                    </ol>
-                    <p>Once configured, this page will show ROI metrics and trends for your job executions.
-                        <a href="https://docs.rundeck.com/docs/manual/jobs/roi-metrics.html" target="_blank">Learn more about ROI Metrics
-                            <i class="glyphicon glyphicon-new-window"></i>
-                        </a>
-                    </p>
-                </div>
-            </div>
-
-            <!-- ROI Data section -->
-            <div data-bind="visible: !loading() && hasRoiData()">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <span class="text-info" data-bind="text: total"></span> executions,
-                        averaging <span class="text-info" data-bind="text: jobRoiPerUnitTotal().toFixed(2)"></span>
-                        hours per run
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-12">
-                        <strong>Total:</strong>
-                        <span class="text-info" data-bind="text: (jobRoiPerUnitTotal() * total()).toFixed(2)"></span>
-                        <span class="text-info" data-bind="text: roiDescription"></span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-12">
-                        <small>
-                            (<span class="text-info" data-bind="text: executionsWithRoi"></span> executions with ROI
-                            data)
-                            - Value: <span class="text-info" data-bind="text: roiCalculation"></span>
-                        </small>
-                    </div>
-                </div>
-
-                <!-- Chart container with more controlled size -->
-                <div class="row mt-3">
-                    <div class="col-sm-12">
-                        <h4>ROI Trend</h4>
-                        <div style="width: 50%; height: 500px; margin: auto;">
-                            <canvas id="roiTrendChart"></canvas>
+                <!-- Average Hours Card -->
+                <div class="col-md-3">
+                    <div class="roi-card">
+                        <div class="roi-card-content">
+                            <div class="roi-metric-value" data-bind="text: jobRoiPerUnitTotal().toFixed(2)"></div>
+                            <div class="roi-metric-label">Average Hours Saved</div>
                         </div>
-                        <div class="graph-notes mt-2">
-                            <h5>Graph Information:</h5>
-                            <ul class="list-unstyled">
-                                <li><i class="glyphicon glyphicon-info-sign"></i> Data points show daily totals and
-                                    averages of all executions</li>
-                                <li><i class="glyphicon glyphicon-info-sign"></i> Multiple executions on the same day
-                                    are aggregated into a single data point</li>
-                                <li><i class="glyphicon glyphicon-hand-up"></i> Hover over any data point to see:
-                                    <ul>
-                                        <li>Total number of executions for that day</li>
-                                        <li>Total hours saved for that day</li>
-                                        <li>Average hours per execution for that day</li>
-                                        <li>Daily ROI calculation based on hourly rate</li>
-                                    </ul>
-                                </li>
-                                <li><i class="glyphicon glyphicon-info-sign"></i> The blue line shows hours saved over
-                                    time</li>
-                                <li><i class="glyphicon glyphicon-info-sign"></i> The green line shows monetary value
-                                    based on hourly rate</li>
-                            </ul>
+                    </div>
+                </div>
+                <!-- Total Hours Card -->
+                <div class="col-md-3">
+                    <div class="roi-card">
+                        <div class="roi-card-content">
+                            <div class="roi-metric-value" data-bind="text: (jobRoiPerUnitTotal() * total()).toFixed(2)">
+                            </div>
+                            <div class="roi-metric-label">Total Hours Saved</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Value Card -->
+                <div class="col-md-3">
+                    <div class="roi-card">
+                        <div class="roi-card-content">
+                            <div class="roi-metric-value" data-bind="text: roiCalculation"></div>
+                            <div class="roi-metric-label">Value</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Chart container with more controlled size -->
+<div class="roi-chart-container">
+    <div class="roi-chart-wrapper">
+        <div style="width: 80%; height: 400px; margin: auto;">
+            <canvas id="roiTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div>
+    <h5>Graph Information:</h5>
+    <ul class="list-unstyled">
+        <li><i class="glyphicon glyphicon-info-sign"></i> Data points show daily totals and
+            averages of all executions</li>
+        <li><i class="glyphicon glyphicon-info-sign"></i> Multiple executions on the same day
+            are aggregated into a single data point</li>
+        <li><i class="glyphicon glyphicon-hand-up"></i> Hover over any data point to see:
+            <ul>
+                <li>Total number of executions for that day</li>
+                <li>Total hours saved for that day</li>
+                <li>Average hours per execution for that day</li>
+            </ul>
+        </li>
+    </ul>
+</div>
