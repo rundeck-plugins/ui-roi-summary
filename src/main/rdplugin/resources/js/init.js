@@ -1,5 +1,3 @@
-//= require lib/support
-
 jQuery(function () {
   if (typeof RDPRO != "object") {
       window.RDPRO = {};
@@ -8,6 +6,4 @@ jQuery(function () {
   RDPRO["ui-roisummary"] = {
       name: "ui-roisummary"
   };
-
-  console.log ("Intializing ROI Metrics");
 });
