@@ -100,7 +100,7 @@
 </div>
 
 <!-- Chart container with more controlled size -->
-<div class="roi-chart-container">
+<div class="roi-chart-container" data-bind="visible: !loading() && hasRoiData()">
     <div class="roi-chart-wrapper">
         <div style="width: 80%; height: 400px; margin: auto;">
             <canvas id="roiTrendChart"></canvas>
@@ -108,7 +108,7 @@
     </div>
 </div>
 
-<div>
+<div data-bind="visible: !loading() && hasRoiData()">
     <h5>Graph Information:</h5>
     <ul class="list-unstyled">
         <li><i class="glyphicon glyphicon-info-sign"></i> Data points show daily totals and
