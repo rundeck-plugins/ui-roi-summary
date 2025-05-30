@@ -4,12 +4,12 @@ buildscript {
         maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
-        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:3.4.0'
+        classpath libs.assetPipeline
     }
 }
 
 plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.18.12'
+    alias(libs.plugins.axionRelease)
     id 'java'
 }
 
@@ -125,7 +125,7 @@ project.pluginZip.dependsOn assetCompile
 project.pluginZip.mustRunAfter assetCompile
 
 dependencies {
-    implementation 'com.bertramlabs.plugins:sass-asset-pipeline:3.4.0'
+    implementation libs.sassAssetPipeline
 }
 
 artifacts {
