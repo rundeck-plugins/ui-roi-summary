@@ -69,6 +69,14 @@ assets {
     compileDir = "${project.buildDir}/assets/resources"
 }
 
+task createMissingDirectories {
+    doFirst {
+        mkdir("${project.projectDir}/src/assets")
+    }
+}
+
+assetCompile.dependsOn createMissingDirectories
+
 defaultTasks 'build'
 
 task pluginZip(type: Jar) {
