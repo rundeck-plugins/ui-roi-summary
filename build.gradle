@@ -4,7 +4,7 @@ buildscript {
         maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
-        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:2.11.6'
+        classpath 'com.bertramlabs.plugins:asset-pipeline-gradle:3.4.0'
     }
 }
 
@@ -20,8 +20,8 @@ repositories {
     maven { url "https://repo.grails.org/grails/core" }
 }
 
-sourceCompatibility = 1.11
-targetCompatibility = 1.11
+sourceCompatibility = 11
+targetCompatibility = 11
 
 println "Java Home: ${System.getProperty('java.home')}"
 println "Java Version: ${System.getProperty('java.version')}"
@@ -42,14 +42,6 @@ scmVersion {
     tag {
         prefix = ''
         versionSeparator = ''
-        def origDeserialize=deserialize
-        deserialize = { config, position, tagName ->
-            def orig = origDeserialize(config, position, tagName)
-            if (orig.split('\\.').length < 3) {
-                orig += ".0"
-            }
-            orig
-        }
     }
 }
 
@@ -132,7 +124,7 @@ project.pluginZip.dependsOn assetCompile
 project.pluginZip.mustRunAfter assetCompile
 
 dependencies {
-    implementation 'com.bertramlabs.plugins:sass-asset-pipeline:2.11.6'
+    implementation 'com.bertramlabs.plugins:sass-asset-pipeline:3.4.0'
 }
 
 artifacts {
