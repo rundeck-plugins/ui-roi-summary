@@ -11,7 +11,7 @@
 
     <div class="roi-summary-cards mb-4" data-bind="visible: true">
         <div data-bind="visible: jobroilist.loading()" class="text-center p-3">
-            <i class="glyphicon glyphicon-refresh"></i> Loading metrics...
+            <i class="glyphicon glyphicon-refresh fa-spin"></i> Loading metrics...
         </div>
 
         <div class="row" data-bind="visible: !jobroilist.loading()">
@@ -157,7 +157,7 @@
     </table>
 
     <!-- No data message -->
-    <div class="alert alert-info" data-bind="visible: jobroilist.jobs().length === 0">
+    <div class="alert alert-info" data-bind="visible: jobroilist.sortedJobs().length === 0">
         <i class="glyphicon glyphicon-info-sign"></i> No ROI data found
     </div>
 
