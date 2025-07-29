@@ -1,57 +1,66 @@
 <div class="roi-summary-job">
     <h3 class="panel-title">%%ROI.Summary%%</h3>
-    <div class="form-group">
-        <label>%%Hourly.Cost%%</label>
-        <input type="number" data-bind="value: graphOptions().hourlyCost" class="form-control input-sm"
-            aria-label="Hourly cost rate" min="0" step="0.01" />
-    </div>
-    <div class="form-group">
-        <label>%%Last.Howmany.Days%%</label>
-        <div class="input-group">
-            <input type="number" data-bind="value: graphOptions().queryMax" class="form-control input-sm" min="1"
-                step="1" pattern="\d*" title="Please enter a positive whole number"
-                onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
-            <span class="input-group-addon">%%Days%%</span>
+    <div data-bind="visible: !loading() && !hasRoiData() && !hideInstructionsMessage()">
+        <div class="form-group">
+            <label>%%Hourly.Cost%%</label>
+            <input type="number" data-bind="value: graphOptions().hourlyCost" class="form-control input-sm"
+                   aria-label="Hourly cost rate" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+            <label>%%Last.Howmany.Days%%</label>
+            <div class="input-group">
+                <input type="number" data-bind="value: graphOptions().queryMax" class="form-control input-sm" min="1"
+                       step="1" pattern="\d*" title="Please enter a positive whole number"
+                       onkeypress="return event.charCode >= 48 && event.charCode <= 57" />
+                <span class="input-group-addon" data-bind="text: getMessage('Days')"></span>
+            </div>
         </div>
     </div>
 
     <!-- Loading indicator -->
-    <div data-bind="visible: loading" class="text-center">
-        <i class="glyphicon glyphicon-refresh spin"></i> Loading ROI data...
+    <div data-bind="visible: loading()" class="text-center">
+        <i class="glyphicon glyphicon-refresh fa-spin"></i>%%Loading%%
     </div>
 
     <!-- No ROI Data message -->
-    <div data-bind="visible: !loading() && !hasRoiData()" class="alert alert-info"
-        style="display: flex; align-items: start;">
+    <div data-bind="visible: !loading() && !hasRoiData() && !hideInstructionsMessage()" class="alert alert-info"
+         style="display: flex; align-items: start;">
         <div style="flex: 1;">
-            <h4 class="alert-heading">
-                <i class="glyphicon glyphicon-info-sign"></i> No ROI Data Available
-            </h4>
-            <p><b>We didn't find any Data for this time range. Increase the "Last How Many Days" value to find
-                    executions with ROI data.</b></p>
+            <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 15px;">
+                <h4 class="alert-heading" style="margin-bottom:0; display: inline-flex; gap:5px;">
+                    <i class="glyphicon glyphicon-info-sign"></i> <span data-bind="text: getMessage('No.ROI.Data.Available')"></span>
+                </h4>
+                <button class="close" aria-label="Do not show this message" title="Do not show this message" data-bind="click: hideInstructions">
+                    X
+                </button>
+            </div>
+            <p><b data-bind="text: getMessage('Increase.Days.Message')"></b></p>
 
-            <p>It's possible this job doesn't have any ROI metrics configured yet. To start tracking ROI:</p>
+            <p data-bind="text: getMessage('No.ROI.Metrics.Configured')"></p>
             <ol>
-                <li>Go to the job editor's <strong>Execution Plugins</strong> tab</li>
-                <li>Enable the <strong>ROI Metrics Data</strong> plugin</li>
-                <li>Click <strong>Add Custom Field</strong> and create a field with:
+                <li><span data-bind="text: getMessage('Go.To.Job.Editor')"></span> <strong data-bind="text: getMessage('Execution.Plugins')"></strong> <span data-bind="text: getMessage('Tab.Tab')"></span></li>
+                <li><span data-bind="text: getMessage('Enable.ROI.Metrics')"></span> <strong data-bind="text: getMessage('ROI.Metrics.Data')"></strong> <span data-bind="text: getMessage('Plugin')"></span></li>
+                <li><span data-bind="text: getMessage('Add')"></span> <strong data-bind="text: getMessage('Add.Custom.Field')"></strong> <span data-bind="text: getMessage('Create.Field')"></span>
                     <ul style="list-style-type: none; padding-left: 20px; margin-top: 10px;">
-                        <li>• Field Label: "Hours Saved" (or similar)</li>
-                        <li>• Field Key: <code>hours</code></li>
-                        <li>• Description: Brief explanation of what this metric tracks</li>
+                        <li>• <span data-bind="text: getMessage('Field.Label')"></span> "<span data-bind="text: getMessage('Hours.Saved')"></span>" <span data-bind="text: getMessage('Or.Similar')"></span></li>
+                        <li>• <span data-bind="text: getMessage('Field.Key')"></span> <code>hours</code></li>
+                        <li>• <span data-bind="text: getMessage('Description')"></span> <span data-bind="text: getMessage('Brief.Explanation')"></span></li>
                     </ul>
                 </li>
-                <li>Enter a value for the hours saved per execution</li>
-                <li>Save the job and run it to start collecting ROI data</li>
+                <li data-bind="text: getMessage('Enter.Value')"></li>
+                <li data-bind="text: getMessage('Save.Job')"></li>
             </ol>
-            <p>Once configured, this page will show ROI metrics and trends for your job executions.
-                <a href="https://docs.rundeck.com/docs/manual/jobs/roi-metrics.html" target="_blank">Learn more
-                    about ROI Metrics
+            <p><span data-bind="text: getMessage('Once.Configured')"></span>
+                <a href="https://docs.rundeck.com/docs/manual/jobs/roi-metrics.html" target="_blank"><span data-bind="text: getMessage('Learn.More')"></span>
                     <i class="glyphicon glyphicon-new-window"></i>
                 </a>
             </p>
         </div>
     </div>
+
+    <p class="no-metrics" data-bind="visible: !loading() && !hasRoiData() && hideInstructionsMessage()">
+        %%Not.Configured%%
+    </p>
 
     <!-- ROI Data section -->
     <div data-bind="visible: !loading() && hasRoiData()">
@@ -62,7 +71,7 @@
                     <div class="roi-card">
                         <div class="roi-card-content">
                             <div class="roi-metric-value" data-bind="text: total"></div>
-                            <div class="roi-metric-label">Total Executions</div>
+                            <div class="roi-metric-label" data-bind="text: getMessage('Total.Executions')"></div>
                         </div>
                     </div>
                 </div>
@@ -71,7 +80,7 @@
                     <div class="roi-card">
                         <div class="roi-card-content">
                             <div class="roi-metric-value" data-bind="text: jobRoiPerUnitTotal().toFixed(2)"></div>
-                            <div class="roi-metric-label">Average Hours Saved</div>
+                            <div class="roi-metric-label" data-bind="text: getMessage('Average.Hours.Saved')"></div>
                         </div>
                     </div>
                 </div>
@@ -81,7 +90,7 @@
                         <div class="roi-card-content">
                             <div class="roi-metric-value" data-bind="text: (jobRoiPerUnitTotal() * total()).toFixed(2)">
                             </div>
-                            <div class="roi-metric-label">Total Hours Saved</div>
+                            <div class="roi-metric-label" data-bind="text: getMessage('Total.Hours.Saved')"></div>
                         </div>
                     </div>
                 </div>
@@ -90,7 +99,7 @@
                     <div class="roi-card">
                         <div class="roi-card-content">
                             <div class="roi-metric-value" data-bind="text: roiCalculation"></div>
-                            <div class="roi-metric-label">Value</div>
+                            <div class="roi-metric-label" data-bind="text: getMessage('Value')"></div>
                         </div>
                     </div>
                 </div>
@@ -109,17 +118,15 @@
 </div>
 
 <div data-bind="visible: !loading() && hasRoiData()">
-    <h5>Graph Information:</h5>
+    <h5 data-bind="text: getMessage('Graph.Information')"></h5>
     <ul class="list-unstyled">
-        <li><i class="glyphicon glyphicon-info-sign"></i> Data points show daily totals and
-            averages of all executions</li>
-        <li><i class="glyphicon glyphicon-info-sign"></i> Multiple executions on the same day
-            are aggregated into a single data point</li>
-        <li><i class="glyphicon glyphicon-hand-up"></i> Hover over any data point to see:
+        <li><i class="glyphicon glyphicon-info-sign"></i> <span data-bind="text: getMessage('Data.Points')"></span></li>
+        <li><i class="glyphicon glyphicon-info-sign"></i> <span data-bind="text: getMessage('Multiple.Executions')"></span></li>
+        <li><i class="glyphicon glyphicon-hand-up"></i> <span data-bind="text: getMessage('Hover.Over')"></span>
             <ul>
-                <li>Total number of executions for that day</li>
-                <li>Total hours saved for that day</li>
-                <li>Average hours per execution for that day</li>
+                <li data-bind="text: getMessage('Total.Number.Executions')"></li>
+                <li data-bind="text: getMessage('Total.Hours.Saved.Day')"></li>
+                <li data-bind="text: getMessage('Average.Hours.Execution')"></li>
             </ul>
         </li>
     </ul>

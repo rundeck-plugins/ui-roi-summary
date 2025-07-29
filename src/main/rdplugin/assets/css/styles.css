@@ -171,6 +171,12 @@
     font-size: var(--text-md);
 }
 
+.no-metrics {
+    color: var(--text-secondary-color);
+    font-size: var(--text-md);
+    margin-bottom: var(--spacing-lg);
+}
+
 /* Media Queries */
 @media (max-width: 48em) {
     .summary-card {

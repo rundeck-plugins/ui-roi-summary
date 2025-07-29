@@ -118,14 +118,14 @@ function initRoiSummary() {
 
         // Get saved date range from localStorage
         const savedQueryMax = localStorage.getItem('rundeck.plugin.roisummary.queryMax');
-        self.queryMax = ko.observable(savedQueryMax ? parseInt(savedQueryMax) : (data.queryMax || 10));
+        self.queryMax = ko.observable(savedQueryMax ? parseInt(savedQueryMax) : (data.queryMax || 5));
         
         self.queryMax.subscribe(function(newValue) {
           const days = parseInt(newValue);
           if (isNaN(days) || days < 1) {
             log('GraphOptions', 'queryMax.subscribe', 'Invalid days value', 'error');
-            self.queryMax(10);
-            localStorage.setItem('rundeck.plugin.roisummary.queryMax', 10);
+            self.queryMax(5);
+            localStorage.setItem('rundeck.plugin.roisummary.queryMax', 5);
             return;
           }
           if (days !== parseFloat(newValue)) {
@@ -149,6 +149,7 @@ function initRoiSummary() {
             localStorage.setItem('rundeck.plugin.roisummary.hourlyCost', 100);
           } else {
             log('GraphOptions', 'hourlyCost.subscribe', `Updated to ${rate}`, 'process');
+            localStorage.setItem('rundeck.plugin.roisummary.hourlyCost', rate);
           }
         });
 
@@ -175,7 +176,7 @@ function initRoiSummary() {
         var self = this;
 
         self.getMessage = function(key) {
-          return jobListSupport.i18Message('ui-roisummary', key);
+          return jobListSupport.i18Message(pluginName, key);
         };
 
         self.project = ko.observable(window._rundeck.projectName || jQuery('#projectSelect').val());
@@ -279,7 +280,7 @@ function initRoiSummary() {
         const defaultHourlyCost = pluginName.config?.defaultHourlyCost || 100;
         self.graphOptions = ko.observable(
             new GraphOptions({
-              queryMax: 10,
+              queryMax: 5,
               hourlyCost: defaultHourlyCost
             })
         );
@@ -652,7 +653,7 @@ function initRoiSummary() {
                   jobListSupport.i18Message('ui-roisummary', 'Jobs'),
                   'joblistroiview',
                   'joblistroitab',
-                  jobListSupport.i18Message('ui-roisummary', 'Dashboard'),
+                  jobListSupport.i18Message('ui-roisummary', 'Tab'),
                   templateHtml,
                   function(elem) {
                     log('JobRoiListView', 'loadJobsListPage', 'Applying bindings');
@@ -913,7 +914,7 @@ function initRoiSummary() {
         self.previousQueryMax = 0; // Keep track of previous queryMax to detect changes
 
         self.getMessage = function(key) {
-          return jobListSupport.i18Message('ui-roisummary', key);
+          return jobListSupport.i18Message(pluginName, key);
         };
 
         self.loading = ko.observable(true);
@@ -924,6 +925,25 @@ function initRoiSummary() {
         self.roiCalculation = ko.observable('');
         self.roiDescription = ko.observable('Hours saved');
         self.hasRoiConfiguration = ko.observable(false);
+        
+        self.hideInstructionsMessage = ko.observable(false);
+        try {
+            const hideInstructions = localStorage.getItem(roiManager.LS_KEY_HIDE_INSTRUCTIONS);
+            self.hideInstructionsMessage(hideInstructions === 'true');
+            log('JobRoiViewModel', 'constructor', `Hide instructions setting: ${self.hideInstructionsMessage()}`, 'general');
+        } catch (e) {
+            logError('JobRoiViewModel', 'constructor', e);
+        }
+        
+        self.hideInstructions = function() {
+            log('JobRoiViewModel', 'hideInstructions', 'Hiding instructions message', 'general');
+            self.hideInstructionsMessage(true);
+            try {
+                localStorage.setItem(roiManager.LS_KEY_HIDE_INSTRUCTIONS, 'true');
+            } catch (e) {
+                logError('JobRoiViewModel', 'hideInstructions', e);
+            }
+        };
 
         logGroup('JobRoiViewModel', 'initialization', {
           loading: self.loading(),
@@ -984,7 +1004,7 @@ function initRoiSummary() {
         const defaultHourlyCost = pluginName.config?.defaultHourlyCost || 100;
         self.graphOptions = ko.observable(
             new GraphOptions({
-              queryMax: 10,
+              queryMax: 5,
               hourlyCost: defaultHourlyCost
             })
         );
@@ -1524,6 +1544,14 @@ function initRoiSummary() {
         log('JobRoiViewModel', 'initialization', 'Ready for data load');
       }
 
+      // Helper function to sanitize HTML content to prevent XSS
+      function sanitizeHTML(str) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(str, 'text/html');
+
+        return doc.body.innerHTML;
+      }
+
       if (pagePath === 'menu/jobs') {
         log('RoiSummary', 'pageInit', 'Initializing jobs page');
         _ticker(moment());
@@ -1546,18 +1574,19 @@ function initRoiSummary() {
               'Days'
             ];
             messageKeys.forEach(key => {
-              const message = jobListSupport.i18Message('ui-roisummary', key);
+              const message = jobListSupport.i18Message(pluginName, key);
+              const sanitizedMessage = sanitizeHTML(message);
               const placeholder = new RegExp('%%' + key + '%%', 'g');
-              processedHtml = processedHtml.replace(placeholder, message);
+              processedHtml = processedHtml.replace(placeholder, sanitizedMessage);
             });
 
             log('RoiSummary', 'templateLoad', 'Creating tab');
             let tablink = jobListSupport.initPage(
                 '#indexMain',
-                jobListSupport.i18Message(pluginId, 'Jobs'),
+                jobListSupport.i18Message('ui-roisummary', 'Jobs'),
                 'joblistroiview',
                 'joblistroitab',
-                jobListSupport.i18Message(pluginId, 'Dashboard'),
+                jobListSupport.i18Message('ui-roisummary', 'Tab'),
                 processedHtml,
                 function(elem) {
                   log('RoiSummary', 'bindingsApplied', 'Initializing view');
@@ -1601,14 +1630,17 @@ function initRoiSummary() {
                 'Hourly.Cost',
                 'Last.Howmany.Days',
                 'Days',
+                'Loading',
                 'Hours.Saved',
                 'Hourly.Value',
-                'Execution.Date'
+                'Execution.Date',
+                'Not.Configured'
               ].forEach(key => {
-                let message = jobListSupport.i18Message(pluginId, key);
+                let message = jobListSupport.i18Message(pluginName, key);
+                let sanitizedMessage = sanitizeHTML(message);
                 processedHtml = processedHtml.replace(
                     new RegExp(`%%${key}%%`, 'g'),
-                    message
+                    sanitizedMessage
                 );
               });
 

@@ -5,7 +5,6 @@ const DB_CONFIG = {
     stores: {
         jobCache: 'jobCache',
         executionCache: 'executionCache',
-        metrics: 'metrics'
     }
 };
 
@@ -389,7 +388,6 @@ async function listStoreContents(storeName) {
 }
 
 // Message handler
-// In dbWorker.js, modify the message handler
 onmessage = async function(e) {
     const { type, data, id } = e.data;
     const startTime = performance.now();
