@@ -1,15 +1,11 @@
 class RoiDataManager {
-    constructor(projectName) {
-        // projectName is needed for identification in logs
+    constructor() {
         this.DEBUG = false;
 
         // Constants
-        this.EXECUTION_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
-        this.RECENT_EXECUTION_THRESHOLD = 1; // days
-        this.METRICS_INTERVAL = 1000 * 60; // 1 minute
+        this.EXECUTION_CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
+        this.CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 4; // 4 days - threshold for cache reset
         this.WORKER_INIT_TIMEOUT = 10000; // 10 seconds
-        this.HEALTH_CHECK_INTERVAL = 1000 * 60 * 5; // 5 minutes
-        this.CACHE_CLEANUP_INTERVAL = 1000 * 60 * 60 * 24 * 4; // 4 days
         this.CACHE_CLEANUP_RETRY_DELAY = 1000 * 60 * 5; // 5 minutes - when rescheduling due to pending requests
         this.CACHE_FRESHNESS_THRESHOLD = 8; // hours - how recent cache must be to skip API calls (increased from 2 to 8)
         this.USE_JOB_REGISTRY = true; // Enable tracking of processed jobs in a registry
@@ -18,6 +14,7 @@ class RoiDataManager {
         // LocalStorage keys
         this.LS_KEY_INITIAL_CACHE_COMPLETE = 'rundeck.plugin.roisummary.initialCacheComplete';
         this.LS_KEY_CACHE_TIMESTAMP = 'rundeck.plugin.roisummary.cacheTimestamp';
+        this.LS_KEY_HIDE_INSTRUCTIONS = 'rundeck.plugin.roisummary.hideInstructions';
 
         // Worker management
         this.dbWorker = null;
@@ -48,44 +45,30 @@ class RoiDataManager {
         this.metrics = {
             cacheHits: 0,
             cacheMisses: 0,
-            requestsQueued: 0,
-            requestsProcessed: 0,
-            cancellations: 0,
             errors: [],
             workerMetrics: {
                 dbWorker: {
                     messagesSent: 0,
-                    messagesReceived: 0,
                     errors: 0,
-                    totalProcessingTime: 0,
                     lastError: null
                 },
                 roiWorker: {
                     messagesSent: 0,
-                    messagesReceived: 0,
                     errors: 0,
-                    totalProcessingTime: 0,
                     lastError: null
                 }
             },
             startTime: Date.now(),
-            lastCleanup: Date.now(),
-            performance: {
-                averageResponseTime: 0,
-                responseTimes: [],
-                lastBatchProcessingTime: 0
-            }
+            lastCleanup: Date.now()
         };
 
-        // Initialize workers and monitoring
+        // Initialize workers
         this.initializeSystem()
-            .then(() => this.startMonitoring())
             .catch(error => {
                 this.logError('initialization', error);
                 throw error;
             });
     }
-
     // Logging utilities
     log(method, msg, type = 'general') {
         if (!this.DEBUG) return;
@@ -146,11 +129,24 @@ class RoiDataManager {
                 this.initializeWorker('roi')
             ]);
             
-            // Restore job registry from IndexedDB if enabled
-            if (this.USE_JOB_REGISTRY) {
+            // Check if cache timestamp is older than 4 days
+            const cacheTimestamp = this.getCacheTimestamp();
+            if (cacheTimestamp && (Date.now() - cacheTimestamp > this.CACHE_MAX_AGE)) {
+                this.log('initializeSystem', 'Cache timestamp is older than 4 days, cleaning cache');
+                // Remove cache related localStorage items
+                localStorage.removeItem(this.LS_KEY_INITIAL_CACHE_COMPLETE);
+                localStorage.removeItem(this.LS_KEY_CACHE_TIMESTAMP);
+
+                // Use existing cleanup method for targeted cleanup
+                await this.cleanup();
+                this.log('initializeSystem', 'Cache cleaned successfully');
+            }
+            else if (this.USE_JOB_REGISTRY) {
                 await this.restoreJobRegistry();
             }
 
+            await this.fetchSystemConfig();
+            
             const duration = performance.now() - startTime;
             this.logGroup('initializeSystem', {
                 status: 'success',
@@ -272,7 +268,7 @@ class RoiDataManager {
                     throw new Error('Could not find plugin script path');
                 }
 
-                const worker = new Worker(pluginScript.src.replace('joblist.js', `lib/${type}Worker.js`));
+                const worker = new Worker(`/assets/pro/ui-roi-summary/lib/${type}Worker.js`);
                 if (type === 'db') {
                     this.dbWorker = worker;
                 } else {
@@ -304,7 +300,7 @@ class RoiDataManager {
                     type: 'init'
                 };
                 
-                // For the ROI worker, we need to pass appLinks and rundeck context
+                // For the ROI worker, need to pass appLinks and rundeck context
                 if (type === 'roi') {
                     initData.data = {
                         rdBase: window._rundeck.rdBase,
@@ -347,108 +343,6 @@ class RoiDataManager {
             }
         } catch (error) {
             this.logError('terminateRoiWorker', error);
-        }
-    }
-    
-    // Monitoring and health checks
-    startMonitoring() {
-        // Start metrics collection
-        if (this.DEBUG) {
-            setInterval(() => this.collectMetrics(), this.METRICS_INTERVAL);
-        }
-
-        // Start health checks
-        setInterval(() => this.healthCheck(), this.HEALTH_CHECK_INTERVAL);
-        
-        // Start periodic cache cleanup - first run will occur after the full interval
-        // to avoid cleaning data that might be needed during the current session
-        setInterval(() => this.cleanup(), this.CACHE_CLEANUP_INTERVAL);
-    }
-
-    async healthCheck() {
-        const startTime = performance.now();
-        try {
-            this.log('healthCheck', 'Starting system health check');
-            
-            // Make parallel requests for health checks
-            const healthPromises = [
-                this.dbRequest('healthCheck', {}).catch(err => ({
-                    status: 'unhealthy',
-                    error: err.message,
-                    timestamp: Date.now()
-                })),
-                this.getRoiWorkerHealth()
-            ];
-            
-            const [dbHealth, roiHealth] = await Promise.all(healthPromises);
-            
-            // Calculate metrics safely 
-            const totalRequests = this.metrics.cacheHits + this.metrics.cacheMisses;
-            const cacheHitRate = totalRequests > 0 
-                ? `${(this.metrics.cacheHits / totalRequests * 100).toFixed(1)}%`
-                : '0.0%';
-                
-            const errorRate = this.metrics.requestsProcessed > 0
-                ? `${(this.metrics.errors.length / this.metrics.requestsProcessed * 100).toFixed(1)}%`
-                : '0.0%';
-
-            const health = {
-                status: dbHealth?.status === 'healthy' && roiHealth?.status === 'healthy' ? 'healthy' : 'unhealthy',
-                timestamp: Date.now(),
-                duration: performance.now() - startTime,
-                components: {
-                    db: dbHealth || { status: 'unknown', error: 'No response from health check' },
-                    roi: roiHealth || { status: 'unknown', error: 'No response from health check' }
-                },
-                metrics: {
-                    cacheHitRate,
-                    totalRequests,
-                    cacheHits: this.metrics.cacheHits,
-                    cacheMisses: this.metrics.cacheMisses,
-                    averageResponseTime: this.metrics.performance.averageResponseTime,
-                    errorRate,
-                    workersInitialized: this.workerInitialized
-                }
-            };
-
-            // Detailed logging
-            this.logGroup('healthCheck:result', {
-                status: health.status,
-                duration: `${(performance.now() - startTime).toFixed(2)}ms`,
-                dbStatus: dbHealth?.status || 'unknown',
-                roiStatus: roiHealth?.status || 'unknown',
-                needsRecovery: health.status !== 'healthy'
-            });
-
-            if (health.status !== 'healthy') {
-                this.logError('healthCheck', new Error('Unhealthy system state'), health);
-                await this.handleUnhealthyState(health);
-            }
-
-            return health;
-        } catch (error) {
-            this.logError('healthCheck', error);
-            return {
-                status: 'error',
-                error: error.message,
-                timestamp: Date.now()
-            };
-        }
-    }
-
-    async handleUnhealthyState(health) {
-        this.log('handleUnhealthyState', 'Attempting system recovery');
-
-        try {
-            if (health.components.db.status !== 'healthy') {
-                await this.reinitializeWorker('db');
-            }
-            if (health.components.roi.status !== 'healthy') {
-                await this.reinitializeWorker('roi');
-            }
-        } catch (error) {
-            this.logError('handleUnhealthyState', error);
-            throw error;
         }
     }
 
@@ -521,7 +415,6 @@ class RoiDataManager {
         }
     }
     // Worker communication
-    // In RoiDataManager
     async dbRequest(type, data) {
         const id = ++this.requestId;
         const startTime = performance.now();
@@ -736,13 +629,25 @@ class RoiDataManager {
             this.metrics.cacheMisses++;
             this.logGroup('getCached:miss', logDetails, 'cache');
             
-            // If we have data but it's expired, log that
+            // If we have data but it's expired, log that and reset initialCacheComplete flag
             if (cached && cached.data && ((Date.now() - cached.timestamp) >= this.EXECUTION_CACHE_TTL)) {
                 this.log('getCached', 'Cache expired', {
                     jobId,
                     age: `${((Date.now() - cached.timestamp) / 1000 / 60).toFixed(1)} minutes`,
                     ttl: `${this.EXECUTION_CACHE_TTL / 1000 / 60} minutes`
                 });
+
+                // Reset initialCacheComplete flag when cache expires due to TTL
+                try {
+                    localStorage.removeItem(this.LS_KEY_INITIAL_CACHE_COMPLETE);
+                    this.log('getCached', 'Reset initialCacheComplete flag due to TTL expiration', {
+                        jobId,
+                        flag: false,
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (error) {
+                    this.logError('getCached:resetInitialCacheComplete', error);
+                }
             }
             
             return null;
@@ -826,7 +731,6 @@ class RoiDataManager {
     }
 
     // Main execution processing
-    // In RoiDataManager, modify getExecutionsWithRoi
     async getExecutionsWithRoi(jobIds, dateRange) {
         const startTime = performance.now();
         this.logGroup('getExecutionsWithRoi:start', { jobIds, dateRange }, 'process');
@@ -1464,7 +1368,6 @@ class RoiDataManager {
 
         } catch (error) {
             this.logError('getExecutionsWithRoi', error);
-            return this.getExecutionsWithRoiFallback(jobIds, dateRange);
         }
     }
 
@@ -1790,91 +1693,6 @@ class RoiDataManager {
         }
     }
 
-    // Fallback implementation
-    async getExecutionsWithRoiFallback(jobIds, dateRange) {
-        this.logGroup('getExecutionsWithRoiFallback:start', {
-            jobIds,
-            dateRange
-        }, 'process');
-
-        const startTime = performance.now();
-        const results = new Map();
-        
-        // Check if ROI worker is available
-        if (!this.roiWorker || !this.workerInitialized.roi) {
-            this.logError('getExecutionsWithRoiFallback', new Error('ROI worker not initialized'));
-            return results;
-        }
-
-        for (const jobId of jobIds) {
-            try {
-                // Use worker to fetch executions
-                const result = await this.fetchExecutions(jobId, dateRange);
-                
-                if (!result || !result.executions || result.executions.length === 0) {
-                    continue;
-                }
-                
-                const executions = result.executions;
-                const totalExecutions = result.totalExecutions || 0;
-                
-                // Process executions with ROI worker
-                const id = ++this.requestId;
-                const processedExecutions = await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Process executions timeout'));
-                    }, 60000); // 60 seconds timeout
-                    
-                    const handler = (e) => {
-                        if (e.data.requestId === id) {
-                            clearTimeout(timeout);
-                            
-                            if (e.data.type === 'error') {
-                                reject(new Error(e.data.error));
-                            } else if (e.data.type === 'executionsProcessed') {
-                                resolve(e.data.results);
-                            }
-                        }
-                    };
-
-                    this.roiWorker.addEventListener('message', handler);
-                    
-                    this.roiWorker.postMessage({
-                        type: 'processExecutions',
-                        id,
-                        data: {
-                            executions: executions,
-                            jobId: jobId,
-                            dateRange: dateRange
-                        }
-                    });
-                });
-                
-                if (processedExecutions && processedExecutions.length > 0) {
-                    // For returning to client/display, we only want successful executions with ROI data
-                    const filteredExecutions = processedExecutions.filter(execution => 
-                        execution.status === 'succeeded' && 
-                        (execution.hasRoi || execution.roiHours > 0)
-                    );
-                    results.set(jobId, filteredExecutions);
-                }
-            } catch (error) {
-                this.logError('getExecutionsWithRoiFallback', error, { jobId });
-            }
-        }
-
-        this.logGroup('getExecutionsWithRoiFallback:complete', {
-            totalTime: `${(performance.now() - startTime).toFixed(2)}ms`,
-            results: Array.from(results.entries()).map(([id, execs]) => ({
-                jobId: id,
-                executionCount: execs.length
-            })),
-            source: 'worker'
-        }, 'process');
-
-        return results;
-    }
-
     // LocalStorage management methods
     setInitialCacheComplete() {
         try {
@@ -1887,6 +1705,7 @@ class RoiDataManager {
             }, 'cache');
         } catch (error) {
             this.logError('setInitialCacheComplete', error);
+            localStorage.setItem(this.LS_KEY_INITIAL_CACHE_COMPLETE, 'false');
         }
     }
     
@@ -2004,40 +1823,33 @@ class RoiDataManager {
         }
     }
 
-    // Metrics collection
-    async collectMetrics() {
+    // Fetch system configuration
+    async fetchSystemConfig() {
         try {
-            const roiMetrics = await this.getRoiWorkerHealth();
-            
-            // Generate cache efficiency metrics
-            const cacheHitRate = this.metrics.cacheHits + this.metrics.cacheMisses > 0 ?
-                (this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses) * 100).toFixed(1) : 'N/A';
-            
-            // Registry effectiveness
-            const registrySize = this.USE_JOB_REGISTRY ? this.processedJobRegistry.size : 0;
-            const jobsWithRoi = this.USE_JOB_REGISTRY ? 
-                Array.from(this.processedJobRegistry.values()).filter(entry => entry.hasRoi).length : 0;
-            
-            this.logGroup('metrics', {
-                cacheHitRate: `${cacheHitRate}%`,
-                requestsProcessed: this.metrics.requestsProcessed,
-                averageResponseTime: `${this.metrics.performance.averageResponseTime.toFixed(2)}ms`,
-                registry: {
-                    enabled: this.USE_JOB_REGISTRY,
-                    size: registrySize,
-                    jobsWithRoi,
-                    jobsWithoutRoi: registrySize - jobsWithRoi
-                },
-                cacheThreshold: `${this.CACHE_FRESHNESS_THRESHOLD} hours`,
-                workerStatus: {
-                    db: this.workerInitialized.db,
-                    roi: this.workerInitialized.roi
-                },
-                uptime: `${((Date.now() - this.metrics.startTime) / 1000 / 60).toFixed(1)} minutes`
+            const url = `${window._rundeck.rdBase}api/40/config/list`;
+
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'x-rundeck-ajax': 'true'
+                }
             });
-        } catch (error) {
-            this.logError('collectMetrics', error);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            const hideInstructions = responseData.find(setting => setting.name === "rundeck.feature.guiHideRoiInstructions.enabled");
+
+            if(hideInstructions && hideInstructions.value !== undefined && localStorage.getItem(this.LS_KEY_HIDE_INSTRUCTIONS) !== 'true') {
+                localStorage.setItem(this.LS_KEY_HIDE_INSTRUCTIONS, hideInstructions.value);
+            }
+
+            this.log('fetchSystemConfig', 'System configuration fetched successfully');
+        } catch(error) {
+            this.logError('fetchSystemConfig', error);
         }
     }
-    
 }

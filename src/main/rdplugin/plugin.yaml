@@ -1,9 +1,9 @@
 name: ui-roisummary
-rundeckPluginVersion: 1.3
+rundeckPluginVersion: 1.2
 author: Eric Chapman | Rundeck Team
 url: https://github.com/rundeck-plugins/ui-roi-summary
 date: 2024-01-20T19:50:16.097Z
-version: 1.0.0
+version: 1.2.0
 providers:
     - name: ui-roisummary
       service: UI
@@ -13,7 +13,6 @@ providers:
       ui:
         - pages: ['menu/jobs', 'scheduledExecution/show']
           scripts:
-            - js/chart.min.js
             - js/init.js
             - js/joblist.js
           styles:
