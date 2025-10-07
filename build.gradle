@@ -20,6 +20,16 @@ repositories {
     maven { url "https://repo.grails.org/grails/core" }
 }
 
+configurations.all {
+    resolutionStrategy {
+        // Force secure versions to override vulnerable transitive dependencies
+        force libs.commonsIo.get()
+        force libs.commonsText.get()
+        force libs.commonsLang3.get()
+        force libs.junitOverride.get()
+    }
+}
+
 sourceCompatibility = 11
 targetCompatibility = 11
 
@@ -133,7 +143,11 @@ project.pluginZip.dependsOn assetCompile
 project.pluginZip.mustRunAfter assetCompile
 
 dependencies {
-    implementation libs.sassAssetPipeline
+    implementation(libs.sassAssetPipeline) {
+        // Exclude problematic dependencies that cannot be safely upgraded
+        exclude group: 'org.sharegov', module: 'mjson'
+        exclude group: 'org.mozilla', module: 'rhino'
+    }
 }
 
 artifacts {
