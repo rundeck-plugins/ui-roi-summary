@@ -948,6 +948,7 @@ class RoiDataManager {
             // Process each job separately
             for (const jobId of jobsToProcess) {
                 const cacheKey = this.getCacheKey(jobId, dateRange);
+                let todayResult = null;
 
                 // If initial cache is complete and we need to check for today's data,
                 // first check if this job has ROI metrics by fetching a single execution for today
@@ -963,19 +964,19 @@ class RoiDataManager {
                                 jobId,
                                 hasRoi
                             }, 'process');
-                            
+
                             // Job has ROI metrics, let's check executions for today
-                            const result = await this.fetchExecutions(jobId, todayDateRange);
-                            const todayExecutions = result.executions;
-                            
+                            todayResult = await this.fetchExecutions(jobId, todayDateRange);
+                            const todayExecutions = todayResult.executions;
+
                             if (todayExecutions.length > 0) {
                                 // Process these executions and merge with existing cache if any
                                 this.logGroup('getExecutionsWithRoi:todayExecutions', {
                                     jobId,
                                     executionsCount: todayExecutions.length,
-                                    totalExecutions: result.totalExecutions
+                                    totalExecutions: todayResult.totalExecutions
                                 }, 'process');
-                                
+
                                 // We'll process these executions later, along with any cached data
                                 // Add to executionsToFetch if we find any
                             }
@@ -1024,14 +1025,14 @@ class RoiDataManager {
                 
                 // Special handling for today's data if the initial cache is complete
                 if (shouldFetchTodayData) {
-                    const todayResult = await this.fetchExecutions(jobId, todayDateRange);
-                    if (todayResult.executions.length > 0) {
-                        this.log('getExecutionsWithRoi:todayFetch', `Found ${todayResult.executions.length} executions for today`, 'process');
+                    const resolvedTodayResult = todayResult || await this.fetchExecutions(jobId, todayDateRange);
+                    if (resolvedTodayResult.executions.length > 0) {
+                        this.log('getExecutionsWithRoi:todayFetch', `Found ${resolvedTodayResult.executions.length} executions for today`, 'process');
                         // Store the executions and remember the total
-                        executionsToFetch.push(...todayResult.executions);
+                        executionsToFetch.push(...resolvedTodayResult.executions);
                         // Store the total count as a separate property
-                        if (typeof todayResult.totalExecutions === 'number') {
-                            executionsToFetch.totalExecutions = todayResult.totalExecutions;
+                        if (typeof resolvedTodayResult.totalExecutions === 'number') {
+                            executionsToFetch.totalExecutions = resolvedTodayResult.totalExecutions;
                         }
                     }
                 }
